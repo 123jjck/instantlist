@@ -8,7 +8,7 @@ def main():
 	output_folder = settings.output_folder
 	goods_file = settings.goods_file
 	resources_file = settings.resources_file
-	per_page = 25
+	per_page = settings.per_page
 
 	version = "1.0"
 
