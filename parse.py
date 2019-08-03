@@ -1,4 +1,5 @@
 import re
+import settings
 
 class Good:
     def __init__(self, id, text, swf, pic):
@@ -12,10 +13,10 @@ def parse(resource_file, goods_file):
     goods = []
 
     item = re.compile('g\[(.*)\] = {Id:(.*)};')
-    resOpen = open("items.as", "r+")
+    resOpen = open(settings.goods_file, "r+")
     resRead = resOpen.read()
     resOpen.close()
-    mrOpen = open("res.txt", encoding="utf8")
+    mrOpen = open(settings.resource_file, encoding="utf8")
     mrRead = mrOpen.read()
     mrOpen.close()
     resStrings = resRead.split("\n")
