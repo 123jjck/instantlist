@@ -1,0 +1,58 @@
+<!--
+	InstantList {{ version }}
+	
+	GitHub:  http://github.com/da15y/instantlist
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>InstantList</title>
+	<link rel="stylesheet" type="text/css" href="./main.css">
+</head>
+<body>
+<nav>
+	<a href="./">InstantList</a>
+	<input id="instantlist_search" type="text" placeholder="Поиск">
+</nav>
+<div class="container">
+<h1>Вещи</h1>
+
+<noscript>
+	<h3>Внимание!</h3>
+	<p>Для удобства использования включите JavaScript.</p>
+</noscript>
+
+<table>
+	<thead>
+		<th>ID</th>
+		<th>Название</th>
+		<th>Превью</th>
+		<th>SWF файл</th>
+	</thead>
+	<tbody>
+{% for good in goods %}
+	<tr>
+		<td> {{ good.id }} </td>
+		<td> {{ good.text }} </td>
+		<td> <img width="130" src="{{ good.pic }}"/> </td>
+		<td> <a href="https://sharaball.ru/fs/{{ good.swf }}">{{ good.swf }}</a> </td>
+	</tr>
+{% endfor %}
+</tbody>
+</table>
+{% for i in pages %}
+	{% if i == current_page %}
+		<b>{{i + 1}}</b>
+	{% else %}
+		<a href="./{{ i + 1 if i != 0 else 'index' }}.html">{{i + 1}}</a>
+	{% endif %}
+{% endfor %}
+<script
+			  src="https://code.jquery.com/jquery-3.4.1.min.js"
+			  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+			  crossorigin="anonymous"></script>
+<script type="text/javascript" src="./search.js"></script>
+</body>
+</html>
