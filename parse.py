@@ -16,7 +16,7 @@ def parse(resource_file, goods_file):
     resOpen = open(settings.goods_file, "r+")
     resRead = resOpen.read()
     resOpen.close()
-    mrOpen = open(settings.resource_file, encoding="utf8")
+    mrOpen = open(settings.resources_file, encoding="utf8")
     mrRead = mrOpen.read()
     mrOpen.close()
     resStrings = resRead.split("\n")
@@ -27,29 +27,29 @@ def parse(resource_file, goods_file):
         swf = ""
         pic = ""
 
-        dwnlfile = re.findall(item, strs)
-        damn = dwnlfile[0][1].split(",")
-        _id = dwnlfile[0][0]
-        if 'TRId:' in dwnlfile[0][1]:
-            resTr = re.compile('tr\['+damn[2].replace("TRId:", "")+'\] = {H:(.*)};')
-            dwnlfile1 = re.findall(resTr, mrRead)
-            if (len(dwnlfile1) != 0):
-                    text = dwnlfile1[0]
+        if "g[" in strs:
+            dwnlfile = re.findall(item, strs)
+            damn = dwnlfile[0][1].split(",")
+            _id = dwnlfile[0][0]
+            if 'TRId:' in dwnlfile[0][1]:
+                resTr = re.compile('tr\['+damn[2].replace("TRId:", "")+'\] = {H:(.*)};')
+                dwnlfile1 = re.findall(resTr, mrRead)
+                if (len(dwnlfile1) != 0):
+                        text = dwnlfile1[0]
 
-        if 'MRId:' in dwnlfile[0][1]:
-            resMr = re.compile('mr\[-'+damn[1].replace("MRId:", "")+'\] = {TId:(.*),Url:"(.*)",V:(.*)};')
-            dwnlfile2 = re.findall(resMr, mrRead)
-            if (len(dwnlfile2) != 0):
-                pic = "http://sharaball.ru/fs/" + dwnlfile2[0][1]
+            if 'MRId:' in dwnlfile[0][1]:
+                resMr = re.compile('mr\[-'+damn[1].replace("MRId:", "")+'\] = {TId:(.*),Url:"(.*)",V:(.*)};')
+                dwnlfile2 = re.findall(resMr, mrRead)
+                if (len(dwnlfile2) != 0):
+                    pic = "http://sharaball.ru/fs/" + dwnlfile2[0][1]
 
-        if 'MRId:' in dwnlfile[0][1]:
-            resMr = re.compile('mr\['+damn[1].replace("MRId:", "")+'\] = {TId:(.*),Url:"(.*)",V:(.*)};')
-            dwnlfile2 = re.findall(resMr, mrRead)
-            if (len(dwnlfile2) != 0):
-                swf = dwnlfile2[0][1]
+            if 'MRId:' in dwnlfile[0][1]:
+                resMr = re.compile('mr\['+damn[1].replace("MRId:", "")+'\] = {TId:(.*),Url:"(.*)",V:(.*)};')
+                dwnlfile2 = re.findall(resMr, mrRead)
+                if (len(dwnlfile2) != 0):
+                    swf = dwnlfile2[0][1]
 
-        g = Good(_id, text, swf, pic)
-        goods.append(g)
+            g = Good(_id, text, swf, pic)
+            goods.append(g)
 
     return goods
-
