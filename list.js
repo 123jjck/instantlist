@@ -3,11 +3,9 @@
         by Jjck
             2021
 */
-
 class InstantList {
     constructor(searchInput, resources, config) {
         /* Init search */
-        
         this.search = searchInput;
         this.search.addEventListener('keydown', function(e) {
             if (e.key === "Enter") {
@@ -16,38 +14,35 @@ class InstantList {
         });
 
         this.config = config;
-        
         this.table = new Table(document.getElementById('table-holder'), document.getElementById('pages-holder'), this.config.itemsPerPage);
-
-        /* Init items, table */
         this.items = this.makeItemsArray(resources[0], resources[1], resources[2]);
 
         this.init();
     }
 
     init() {
-
         window.onhashchange = this.handleHashChange.bind(this);
-
-        if(window.location.hash == '') {
+        if (window.location.hash == '') {
             this.table.renderTable(this.items, 1, 1, this.config.itemsPerPage);
         } else {
             this.handleHashChange();
         }
-    
     }
 
     goToPage(page) {
-        if(page <= 0) page = 1;
+        if (page <= 0) page = 1;
         let from = ((page - 1) * this.config.itemsPerPage) + 1;
 
         let to = page * this.config.itemsPerPage;
-        window.scrollTo({ top: 0 });
+        window.scrollTo({
+            top: 0
+        });
         this.table.renderTable(this.items, page, from, to);
     }
 
     handleHashChange() {
-        if(!window.location.hash.includes('#search_')) { /* Change page */
+        if (!window.location.hash.includes('#search_')) {
+            /* Change page */
             this.search.value = '';
             this.goToPage(+window.location.hash.replace('#', ''));
             return;
@@ -55,15 +50,14 @@ class InstantList {
         this.search.value = decodeURIComponent(window.location.hash.replace('#search_', ''));
         let query = decodeURIComponent(window.location.hash.replace("#search_", "")).trim();
         this.table.renderSearchResults(query, this.items);
-    
     }
 
     makeItemsArray(g, mr, tr) {
         let items = [];
         for (let item in g) {
             item = g[item];
-            if(this.config['layerIds'] !== '*') {
-                if(!this.config['layerIds'].includes(item['LayerId'])) continue;
+            if (this.config['layerIds'] !== '*') {
+                if (!this.config['layerIds'].includes(item['LayerId'])) continue;
             }
             items.push({
                 Id: item['Id'],
@@ -74,7 +68,6 @@ class InstantList {
         }
         return items;
     }
-    
 }
 
 class Table {
@@ -84,9 +77,8 @@ class Table {
         this.itemsPerPage = itemsPerPage;
     }
     renderTable(items, page, from, to) {
-        
         /* Table */
-        let html = '<table>';
+        let html = '<table class="table table-striped table-bordered table-responsive">';
         html += '<thead>';
         html += '<th>ID</th>';
         html += '<th>Название</th>';
@@ -100,19 +92,22 @@ class Table {
         html += '</tbody>';
         html += '</table>';
 
-
         this.holder.innerHTML = html;
-        
+
         /* Pagination */
         let pages = Math.ceil(items.length / this.itemsPerPage);
 
         let htmlPages = '';
+
+        htmlPages = '<nav aria-label="...">';
+        htmlPages += '<ul class="pagination pagination-sm">';
+ 
         for (let i = 1; i < pages; i++) {
-            htmlPages += i === page ? `<a href='#${i}' style="color: #6e6e6e">${i}</a> ` : `<a href='#${i}'>${i}</a> `;
+            htmlPages += i === page ? `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span><li>` : `<li class="page-item"><a class="page-link" href="#${i}">${i}</a></li> `;
         }
-
+        htmlPages += '</ul>';
+        htmlPages += '</nav>';
         this.pageHolder.innerHTML = htmlPages;
-
     }
     renderItems(items, from, to) {
         let html = '';
@@ -127,14 +122,17 @@ class Table {
         let html = '<tr>';
         html += `<td>${item['Id']}</td>`;
         html += `<td>${item['Name']}</td>`;
-        html += `<td><img width="130" src="https://sharaball.ru/fs/${item['PicUrl']}"/></td>`;
+        html += `<td><img style="width: 8.1rem" class="img-fluid" src="https://sharaball.ru/fs/${item['PicUrl']}"/></td>`;
         html += `<td><a href="https://sharaball.ru/fs/${item['SwfUrl']}">${item['SwfUrl']}</a></td>`;
         html += `</tr>`;
         return html;
     }
+    normalizeString(str) {
+        return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '');
+    }
     renderSearchResults(query, items) {
         /* Render search results */
-        let html = '<table>';
+        let html = '<table class="table table-striped table-bordered table-responsive">';
         html += '<thead>';
         html += '<th>ID</th>';
         html += '<th>Название</th>';
@@ -142,24 +140,24 @@ class Table {
         html += '<th>SWF файл</th>';
         html += '</thead>';
         html += '<tbody>';
-        
-        if(query.length >= 3) {
+
+        if (query.length >= 3) {
+            query = this.normalizeString(query);
             for (let i in items) {
-                if (items[i].Name.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '').indexOf(query.toLowerCase().replace(/ё/g, 'е').replace(/"/g, "").replace(/'/g, '')) > -1) {
+                if (this.normalizeString(items[i].Name).indexOf(query) > -1) {
                     let item = items[i];
                     html += this.renderElement(item);
                 }
             }
         }
-        if (html === "<table><thead><th>ID</th><th>Название</th><th>Превью</th><th>SWF файл</th></thead><tbody>") {
+        if (html === '<table class="table table-striped table-bordered table-responsive"><thead><th>ID</th><th>Название</th><th>Превью</th><th>SWF файл</th></thead><tbody>') {
             html = "<h2> К сожалению, мы ничего не нашли! </h2>";
         } else {
             html += '</tbody>';
             html += '</table>';
         }
-    
+
         this.pageHolder.innerHTML = '';
-    
         this.holder.innerHTML = html;
     }
 }

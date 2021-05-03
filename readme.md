@@ -1,10 +1,7 @@
 # InstantList JS
 Быстрый, удобный и простой в установке список вещей для вашего сайта.
 
-## Демо:
-* [Только одежда](https://123jjck.github.io/instantlist "Только одежда")
-* [Все вещи](https://123jjck.github.io/instantlist/all_items.html "Все вещи")
-
+[Демо](https://123jjck.github.io/instantlist/)
 ## Установка:
  1. Переместите файлы репозитория в папку /items/ на вашем веб-сервере
  2. Готово!
