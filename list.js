@@ -62,7 +62,7 @@ class InstantList {
         let items = [];
         for (let item in g) {
             item = g[item];
-            if(this.config['layerids'] !== '*') {
+            if(this.config['layerIds'] !== '*') {
                 if(!this.config['layerIds'].includes(item['LayerId'])) continue;
             }
             items.push({
@@ -117,6 +117,7 @@ class Table {
     renderItems(items, from, to) {
         let html = '';
         for (let i = from - 1; i < to; i++) {
+
             let item = items[i];
             html += this.renderElement(item);
         }
