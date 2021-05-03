@@ -4,7 +4,12 @@
     <meta charset="utf-8">
     <title>InstantList JS</title>
     <link rel="stylesheet" type="text/css" href="./css/main.css">
+    <script>
+        window.config = {};
+        config['itemsPerPage'] = 20; // Количество вещей на страницу
 
+        config['layerIds'] = [36,45,31,11,56,27,57,85]; // Разрешённые LayerId
+    </script>
     <script src="./items.min.js"></script> <!--- Loading items -->
     <script src="./resources.min.js"></script> <!--- Loading resources -->
 
@@ -13,7 +18,7 @@
 </head>
 <body>
 <nav>
-    <a href="javascript://" onclick="window.location.href = '#'; window.search.value = ''; initTable(items)">InstantList</a>
+    <a href="javascript://" onclick="window.location.href = '#';">InstantList</a>
     <input id="instantlist_search" type="text" placeholder="Поиск">
 </nav>
 <div class="container">
