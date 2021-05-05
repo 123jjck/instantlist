@@ -5,14 +5,12 @@
 */
 class InstantList {
     constructor(searchInput, resources, config) {
-        /* Init search */
         this.search = searchInput;
         this.search.addEventListener('keydown', function(e) {
             if (e.key === "Enter") {
                 location.href = "#search_" + encodeURIComponent(this.value);
             }
         });
-
         this.config = config;
         this.table = new Table(document.getElementById('table-holder'), document.getElementById('pages-holder'), this.config.itemsPerPage);
         this.items = this.makeItemsArray(resources[0], resources[1], resources[2]);
@@ -32,7 +30,6 @@ class InstantList {
     goToPage(page) {
         if (page <= 0) page = 1;
         let from = ((page - 1) * this.config.itemsPerPage) + 1;
-
         let to = page * this.config.itemsPerPage;
         window.scrollTo({
             top: 0
@@ -78,7 +75,7 @@ class Table {
     }
     renderTable(items, page, from, to) {
         /* Table */
-        let html = '<table class="table table-striped table-bordered table-responsive">';
+        let html = '<table class="table table-striped table-bordered">';
         html += '<thead>';
         html += '<th>ID</th>';
         html += '<th>Название</th>';
@@ -112,7 +109,6 @@ class Table {
     renderItems(items, from, to) {
         let html = '';
         for (let i = from - 1; i < to; i++) {
-
             let item = items[i];
             html += this.renderElement(item);
         }
@@ -123,7 +119,7 @@ class Table {
         html += `<td>${item['Id']}</td>`;
         html += `<td>${item['Name']}</td>`;
         html += `<td><img style="width: 8.1rem" class="img-fluid" src="https://sharaball.ru/fs/${item['PicUrl']}"/></td>`;
-        html += `<td><a href="https://sharaball.ru/fs/${item['SwfUrl']}">${item['SwfUrl']}</a></td>`;
+        html += `<td><a href="https://sharaball.ru/fs/${item['SwfUrl']}" target="_blank">${item['SwfUrl']}</a></td>`;
         html += `</tr>`;
         return html;
     }
@@ -131,8 +127,7 @@ class Table {
         return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '');
     }
     renderSearchResults(query, items) {
-        /* Render search results */
-        let html = '<table class="table table-striped table-bordered table-responsive">';
+        let html = '<table class="table table-striped table-bordered">';
         html += '<thead>';
         html += '<th>ID</th>';
         html += '<th>Название</th>';
@@ -150,7 +145,8 @@ class Table {
                 }
             }
         }
-        if (html === '<table class="table table-striped table-bordered table-responsive"><thead><th>ID</th><th>Название</th><th>Превью</th><th>SWF файл</th></thead><tbody>') {
+
+        if (html === '<table class="table table-striped table-bordered"><thead><th>ID</th><th>Название</th><th>Превью</th><th>SWF файл</th></thead><tbody>') {
             html = "<h2> К сожалению, мы ничего не нашли! </h2>";
         } else {
             html += '</tbody>';
@@ -163,5 +159,5 @@ class Table {
 }
 
 window.onload = () => {
-    let list = new InstantList(document.getElementById('instantlist_search'), [g, mr, tr], window.config);
+    new InstantList(document.getElementById('instantlist_search'), [g, mr, tr], window.config);
 };
