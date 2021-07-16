@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>InstantList JS</title>
-    <script>
-        window.config = {};
-
-        config['itemsPerPage'] = 20; // Количество вещей на страницу
-        config['layerIds'] = [36,45,31,11,56,27,57,85]; // Разрешённые LayerId
-        config['domain'] = "https://sharaball.ru"; 
-        config['fsPath'] = 'fs';
-    </script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
-    <script src="./items.min.js"></script> <!--- Loading items -->
-    <script src="./resources.min.js"></script> <!--- Loading resources -->
-    <script src="./list.js"></script> <!--- Loading main -->
-
-    <style>
-        .pagination {
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>InstantList JS</title>
+        <script>
+            window.config = {};
+            
+            config['itemsPerPage'] = 20; // Количество вещей на страницу
+            config['layerIds'] = [36,45,31,11,56,27,57,85]; // Разрешённые LayerId
+            config['domain'] = "https://sharaball.ru"; 
+            config['fsPath'] = 'fs';
+        </script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+        <script src="./items.min.js"></script> <!--- Loading items -->
+        <script src="./resources.min.js"></script> <!--- Loading resources -->
+        <script src="./list.js"></script> <!--- Loading main -->
+        <style>
+            .pagination {
             display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
             display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
             display: -ms-flexbox;      /* TWEENER - IE 10 */
@@ -26,24 +25,24 @@
             display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
             flex-wrap : wrap;
             -webkit-flex-wrap: wrap;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar sticky-top navbar-dark bg-primary">   
-          <div class="d-flex form-inline">
-            <a class="navbar-brand" href="javascript://" onclick="window.location.href = '#';">InstantList</a>
-            <input id="instantlist_search" class="form-control me-2" type="search" placeholder="Поиск" aria-label="Search">
-          </div>
-    </nav>
-    <div class="container-fluid py-1">
-        <h1>Вещи</h1>
-        <noscript>
-            <h3>Внимание!</h3>
-            <p>Для работы списка включите JavaScript.</p>
-        </noscript>
-        <div id="table-holder" class="table-responsive"></div>
-        <div id="pages-holder"></div>
-    </div>
-</body>
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar sticky-top navbar-dark bg-primary">
+            <div class="d-flex form-inline">
+                <a class="navbar-brand" href="javascript://" onclick="window.location.href = '#';">InstantList</a>
+                <input id="instantlist_search" class="form-control me-2" type="search" placeholder="Поиск" aria-label="Search">
+            </div>
+        </nav>
+        <div class="container-fluid py-1">
+            <h1>Вещи</h1>
+            <noscript>
+                <h3>Внимание!</h3>
+                <p>Для работы списка включите JavaScript.</p>
+            </noscript>
+            <div id="table-holder" class="table-responsive"></div>
+            <div id="pages-holder"></div>
+        </div>
+    </body>
 </html>
