@@ -108,6 +108,9 @@ class Table {
     normalizeString(str) {
         return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '').trim();
     }
+    normalizeStringKeepQuotes(str) {
+        return str.toLowerCase().replace(/ё/g, 'е').trim();
+    }
     renderSearchResults(query, items) {
         let html = '<table class="table table-striped table-bordered"><thead>';
 
@@ -118,10 +121,31 @@ class Table {
 
         html += '</thead><tbody>';
 
-        if (query.length >= 3) {
+        if (query.length >= 2) {
             query = this.normalizeString(query);
             for (let i in items) {
-                if (this.normalizeString(items[i].Name).indexOf(query) !== -1) html += this.renderElement(items[i]);
+                let normalizedName = this.normalizeString(items[i].Name);
+                if (normalizedName.indexOf(query) !== -1) {
+                    let itemToRender = Object.assign({}, items[i]); // copy item
+                    let normalizedNameWithQuotes = this.normalizeStringKeepQuotes(items[i].Name);
+
+                    // highlight found words
+                    itemToRender["Name"] = '';
+                    let queryWords = query.split(' ');
+
+                    for(let letterIndex = 0; letterIndex < items[i]["Name"].length; letterIndex++) {
+                        for(let word of queryWords) {
+                            if(letterIndex == normalizedNameWithQuotes.lastIndexOf(word)) {
+                                itemToRender["Name"] += '<span class="bg-selection">';
+                            }
+                            if(letterIndex == (normalizedNameWithQuotes.lastIndexOf(word) + word.length)) {
+                                itemToRender["Name"] += '</span>';
+                            }
+                        }
+                        itemToRender["Name"] += items[i]['Name'][letterIndex];
+                    }
+                    html += this.renderElement(itemToRender);
+                }
             }
         }
 
