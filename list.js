@@ -1,7 +1,7 @@
 /*
     InstantList JS
         by Jjck
-            2021
+            2022
 */
 class InstantList {
     constructor(searchInput, resources, config) {
@@ -81,7 +81,7 @@ class Table {
 
         /* Pagination */
         let pages = Math.ceil(items.length / this.itemsPerPage);
-        let paginationHtml = '<nav aria-label="..."><ul class="pagination pagination-sm">';
+        let paginationHtml = '<nav aria-label="..."><ul class="pagination pagination-sm d-flex flex-wrap">';
         for (let i = 1; i < pages; i++) {
             paginationHtml += i === page ? `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span><li>` : `<li class="page-item"><a class="page-link" href="#${i}">${i}</a></li> `;
         }
