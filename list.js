@@ -1,8 +1,36 @@
 /*
     InstantList JS
         by Jjck
-            2022
+            2023
 */
+
+const goodTypeMap = { // TODO add more types
+    1: 'Одежда',
+    4: 'Причёски',
+    14: 'Очки',
+    16: 'Одежда крошек',
+    19: 'Причёски крошек',
+    20: 'Мебель',
+    22: 'На стену',
+    32: 'Обувь',
+    34: 'Домики',
+    36: 'Аксессуары',
+    37: 'Шарафоны',
+    40: 'Костюмы',
+    41: 'Фоны',
+    44: 'Уши',
+    45: 'Глаза',
+    48: 'Рот',
+    49: 'Нос',
+    52: 'Питомцы',
+    58: 'Клубы',
+    64: 'Магия',
+    70: 'Шоу',
+    94: 'Спутники',
+    111: 'Смайлы',
+    119: 'Наклейки'
+};
+
 class InstantList {
     constructor(searchInput, resources, config) {
         this.search = searchInput;
@@ -14,7 +42,7 @@ class InstantList {
         
         this.config = config;
         this.table = new Table(document.getElementById(this.config.tableHolderId), document.getElementById(this.config.pagesHolderId), this.config.itemsPerPage, this.config.domain, this.config.fsPath);
-        this.items = this.buildItemsArray(resources[0], resources[1], resources[2]);
+        this.items = this.buildItemsArray(resources[0], resources[1], resources[2], resources[3]);
 
         this.init();
     }
@@ -41,15 +69,20 @@ class InstantList {
         let query = this.search.value = decodeURIComponent(window.location.hash.replace("#search_", ""));
         this.table.renderSearchResults(query, this.items);
     }
-    buildItemsArray(g, mr, tr) {
+    getItemType(goodTypeId) {
+        return goodTypeMap[goodTypeId] || goodTypeId;
+    }
+    buildItemsArray(t, g, mr, tr) {
+        // TODO tags
         let items = [];
         for (let item of Object.values(g)) {
             if (this.config['layerIds'] !== '*' && !this.config['layerIds'].includes(item['LayerId'])) continue;
             items.push({
                 Id: item['Id'],
-                SwfUrl: mr[item['MRId']] !== undefined ? mr[item['MRId']]['Url'] : undefined,
+                Name: tr[item['TRId']] !== undefined ? tr[item['TRId']]['H'] : 'Без названия',
+                Type: this.getItemType(item['GoodTypeId']),
                 PicUrl: mr[-item['MRId']] !== undefined ? mr[-item['MRId']]['Url'] : '',
-                Name: tr[item['TRId']] !== undefined ? tr[item['TRId']]['H'] : 'Без названия'
+                SwfUrl: mr[item['MRId']] !== undefined ? mr[item['MRId']]['Url'] : undefined
             });
         }
         return items;
@@ -72,6 +105,7 @@ class Table {
 
         html += '<th>ID</th>';
         html += '<th>Название</th>';
+        html += '<th>Тип</th>';
         html += '<th>Превью</th>';
         html += '<th>SWF файл</th>';
 
@@ -103,6 +137,7 @@ class Table {
         let html = '<tr>';
         html += `<td>${item['Id']}</td>`;
         html += `<td>${item['Name']}</td>`;
+        html += `<td>${item['Type']}</td>`;
         html += `<td><img style="width: 8.1rem" class="img-fluid" src="${this.domain}/${this.fsPath}/${item['PicUrl']}" alt=""/></td>`;
         html += `<td><a href="${this.domain}/${this.fsPath}/${item['SwfUrl']}" target="_blank">${item['SwfUrl']}</a></td>`;
         html += `</tr>`;
@@ -119,6 +154,7 @@ class Table {
 
         html += '<th>ID</th>';
         html += '<th>Название</th>';
+        html += '<th>Тип</th>';
         html += '<th>Превью</th>';
         html += '<th>SWF файл</th>';
 
@@ -152,7 +188,7 @@ class Table {
             }
         }
 
-        if (html === '<table class="table table-striped table-borderless"><thead><th>ID</th><th>Название</th><th>Превью</th><th>SWF файл</th></thead><tbody>') {
+        if (html === '<table class="table table-striped table-borderless"><thead><th>ID</th><th>Название</th><th>Тип</th><th>Превью</th><th>SWF файл</th></thead><tbody>') {
             html = "<h2> К сожалению, мы ничего не нашли! </h2>";
         } else {
             html += '</tbody></table>';
@@ -164,4 +200,4 @@ class Table {
     }
 }
 
-window.onload = () => new InstantList(document.getElementById('instantlist_search'), [g, mr, tr], window.config);
+window.onload = () => new InstantList(document.getElementById('instantlist_search'), [[], g, mr, tr], window.config);
