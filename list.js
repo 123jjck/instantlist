@@ -77,10 +77,12 @@ class InstantList {
 
         this.init();
     }
+
     init() {
         window.onhashchange = this.handleHashChange.bind(this);
         this.handleHashChange();
     }
+
     goToPage(page = 1) {
         if (page <= 0) page = 1;
         let from = ((page - 1) * this.config.itemsPerPage) + 1;
@@ -90,6 +92,7 @@ class InstantList {
         });
         this.table.renderTable(this.items, page, from, to);
     }
+
     handleHashChange() {
         if (!window.location.hash.includes('#search_')) {
             this.table.titleHolder.innerHTML = "Вещи";
@@ -100,9 +103,11 @@ class InstantList {
         let query = this.search.value = decodeURIComponent(window.location.hash.replace("#search_", ""));
         this.table.renderSearchResults(query, this.items);
     }
+
     getItemType(goodTypeId) {
         return goodTypeMap[goodTypeId] || goodTypeId;
     }
+
     buildItemsArray(t, g, mr, tr) {
         // TODO tags
         let items = [];
@@ -130,6 +135,7 @@ class Table {
         this.domain = domain;
         this.fsPath = fsPath;
     }
+
     renderTable(items, page, from, to) {
         /* Table */
         let html = '<table class="table table-striped table-borderless"><thead>';
@@ -155,6 +161,7 @@ class Table {
         paginationHtml += '</ul></nav>';
         this.pageHolder.innerHTML = paginationHtml;
     }
+
     renderItems(items, from, to) {
         let html = '';
         for (let i = from - 1; i < to; i++) {
@@ -164,6 +171,7 @@ class Table {
         }
         return html;
     }
+
     renderElement(item) {
         let html = '<tr>';
         html += `<td>${item['Id']}</td>`;
@@ -174,12 +182,15 @@ class Table {
         html += `</tr>`;
         return html;
     }
+
     normalizeString(str) {
         return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '').trim();
     }
+
     normalizeStringKeepQuotes(str) {
         return str.toLowerCase().replace(/ё/g, 'е').trim();
     }
+    
     renderSearchResults(query, items) {
         let html = '<table class="table table-striped table-borderless"><thead>';
 
