@@ -202,11 +202,12 @@ class Table {
 
         html += '</thead><tbody>';
 
-        if (query.trim().length >= 2) {
+        query = query.trim();
+        if (query.length >= 2 || !isNaN(query)) {
             query = this.normalizeString(query);
             for (let i in items) {
                 let normalizedName = this.normalizeString(items[i].Name);
-                if (normalizedName.indexOf(query) !== -1) {
+                if (normalizedName.indexOf(query) !== -1 || items[i].Id == query) {
                     let itemToRender = Object.assign({}, items[i]); // copy item
                     let normalizedNameWithQuotes = this.normalizeStringKeepQuotes(items[i].Name);
 
@@ -223,8 +224,9 @@ class Table {
                                 itemToRender["Name"] += '</mark>';
                             }
                         }
-                        itemToRender["Name"] += items[i]['Name'][letterIndex];
+                        itemToRender["Name"] += items[i]["Name"][letterIndex];
                     }
+                    if(items[i].Id == query) itemToRender["Id"] = '<mark>' + itemToRender['Id'] + '</mark>';
                     html += this.renderElement(itemToRender);
                 }
             }
