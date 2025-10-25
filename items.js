@@ -18819,4 +18819,3 @@ var goods = g;
 var goods_ma = gm;
 var goods_smiles = gs;
 var goods_club_dancefloor = gcd;
-module.exports = g;
