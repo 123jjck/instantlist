@@ -1,59 +1,331 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>InstantList JS</title>
-        <script>
-            window.config = {};
-            
-            config['itemsPerPage'] = 25; // Количество вещей на страницу
-            config['layerIds'] = [36,45,31,11,56,27,57,85]; // Разрешённые LayerId
-            config['tableHolderId'] = "table-holder";
-            config['pagesHolderId'] = "pages-holder";
-            config['domain'] = "https://www.smeshariki.ru"; 
-            config['fsPath'] = 'fs';
-        </script>
-        <link rel="stylesheet" href="./bootstrap.min.css">
-        <script src="./items.min.js"></script> <!--- Loading items -->
-        <script src="./resources.min.js"></script> <!--- Loading resources -->
-        <script src="./list.js"></script> <!--- Loading main -->
-        <style>
-            .mark, mark {
-                padding: 0 !important;
-                background-color: #6c757d2e !important;
-            }
-        </style>
-    </head>
-    <body>
-        <nav class="navbar sticky-top navbar-dark bg-primary">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>InstantList JS</title>
+    <meta name="description" content="InstantList JS - удобный и быстрый список вещей Шарарама!">
+    <meta name="keywords" content="instantlist,инстантлист,инстант,jjck,jick,джик,список вещей шарарама" />
+    <script>
+        window.config = {};
+
+        config['itemsPerPage'] = 25; // Количество вещей на страницу
+        config['layerIds'] = [36, 45, 31, 11, 56, 27, 57, 85]; // Разрешённые LayerId
+        config['tableHolderId'] = "table-holder";
+        config['pagesHolderId'] = "pages-holder";
+        config['domain'] = "https://www.smeshariki.ru";
+        config['fsPath'] = 'fs';
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <script src="./items.min.js"></script> <!--- Loading items -->
+    <script src="./resources.min.js"></script> <!--- Loading resources -->
+    <script src="./list.js"></script> <!--- Loading main -->
+
+    <!-- Tagify CSS & JS -->
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+
+    <!-- Custom styles -->
+    <link href="./style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <nav class="navbar sticky-top navbar-dark bg-primary">
+        <div class="container-fluid">
             <div class="d-flex form-inline">
                 <a class="navbar-brand" href="#">InstantList</a>
                 <div class="input-group">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text bg-white border-right-0" id="inputGroup-sizing-sm"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                          </svg></span>
-                    </div>
-                    <input id="instantlist_search" class="form-control me-2 border-left-0 border shadow-none" type="search" placeholder="Поиск..." aria-label="Search">
+                    <span class="input-group-text bg-white border-right-0" id="inputGroup-sizing-sm"><svg
+                            xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-search" viewBox="0 0 16 16">
+                            <path
+                                d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                        </svg></span><input id="instantlist_search"
+                        class="form-control me-2 border-left-0 border shadow-none" type="search" placeholder="Поиск..."
+                        aria-label="Search">
+                    <button class="btn btn-outline-light" type="button" onclick="openAdvancedSearchModal()"
+                        title="Расширенный поиск">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-funnel" viewBox="0 0 16 16">
+                            <path
+                                d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2h-11z" />
+                        </svg>
+                    </button>
                 </div>
-                <ul class="navbar-nav ml-3">
-                    <li class="nav-item">
-                        <a class="nav-link" href="all_items.html">Все вещи</a>
-                    </li>
-                </ul>
             </div>
-        </nav>
-        <div class="container-fluid py-1">
-            <h1 id="title">Вещи</h1>
-            <noscript>
-                <h3>Внимание!</h3>
-                <p>Для работы списка включите JavaScript.</p>
-            </noscript>
-            <div id="table-holder" class="table-responsive"></div>
-            <div id="pages-holder"></div>
+            <ul class="navbar-nav me-auto mb-2 m ms-lg-1 mb-lg-0">
+                <li class="nav-item ms-2">
+                    <a class="nav-link" href="./all_items.html">Все вещи</a>
+                </li>
+            </ul>
+
+            <a href="#" class="text-decoration-none text-white" onclick="openSettingsModal()">
+                Настройки
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear"
+                    viewBox="0 0 16 16">
+                    <path
+                        d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0">
+                    </path>
+                    <path
+                        d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z">
+                    </path>
+                </svg>
+            </a>
         </div>
-    </body>
+    </nav>
+    <div class="container-fluid py-1">
+        <h1 id="title">Вещи</h1>
+        <noscript>
+            <h3>Внимание!</h3>
+            <p>Для работы списка включите JavaScript.</p>
+        </noscript>
+        <div id="table-holder" class="table-responsive"></div>
+        <div id="pages-holder"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">Настройки</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="mb-3">Общие настройки</h6>
+                        <div>
+                            <div class="col">
+                                <label for="itemsPerPageSelect" class="form-label">Элементов на странице:</label>
+                                <select class="form-select" id="itemsPerPageSelect">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="col mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="showOnlyStoreItems">
+                                    <label class="form-check-label" for="showOnlyStoreItems">
+                                        Показывать только вещи из магазина
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="mb-3">Столбцы таблицы</h6>
+                        <p class="mb-3 text-muted">Выберите столбцы, которые хотите видеть в таблице:</p>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colId" checked disabled>
+                                <label class="form-check-label" for="colId">ID</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colName" checked disabled>
+                                <label class="form-check-label" for="colName">Название</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colType" checked disabled>
+                                <label class="form-check-label" for="colType">Тип</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colPreview" checked disabled>
+                                <label class="form-check-label" for="colPreview">Превью</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colSwf" checked disabled>
+                                <label class="form-check-label" for="colSwf">SWF файл</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colPublishDate" checked>
+                                <label class="form-check-label" for="colPublishDate">Дата добавления</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colTags">
+                                <label class="form-check-label" for="colTags">Теги</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colUsualTickets">
+                                <label class="form-check-label" for="colUsualTickets">Смешинки</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="colMagicTickets">
+                                <label class="form-check-label" for="colMagicTickets">Румбики</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger me-auto" onclick="resetSettings()">По
+                        умолчанию</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="applyColumnSettings()">Применить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Search Modal -->
+    <div class="modal fade" id="advancedSearchModal" tabindex="-1" aria-labelledby="advancedSearchModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="advancedSearchModalLabel">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                            class="bi bi-funnel me-2" viewBox="0 0 16 16">
+                            <path
+                                d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2h-11z" />
+                        </svg>
+                        Расширенный поиск
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Поисковый запрос -->
+                    <div class="mb-4">
+                        <label for="advancedSearchQuery" class="form-label">Поисковый запрос:</label>
+                        <input type="text" class="form-control" id="advancedSearchQuery"
+                            placeholder="Введите текст для поиска...">
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="exactMatchSearch">
+                            <label class="form-check-label" for="exactMatchSearch">
+                                Точное совпадение названия
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Категории -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Категории:</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_clothes" value="Одежда">
+                                    <label class="form-check-label" for="cat_clothes">Одежда</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_hats"
+                                        value="Шапки/Причёски">
+                                    <label class="form-check-label" for="cat_hats">Шапки/Причёски</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_shoes" value="Обувь">
+                                    <label class="form-check-label" for="cat_shoes">Обувь</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_accessories"
+                                        value="Аксессуары">
+                                    <label class="form-check-label" for="cat_accessories">Аксессуары</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_eyes" value="Глаза">
+                                    <label class="form-check-label" for="cat_eyes">Глаза</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_costumes" value="Костюмы">
+                                    <label class="form-check-label" for="cat_costumes">Костюмы</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_backgrounds" value="Фоны">
+                                    <label class="form-check-label" for="cat_backgrounds">Фоны</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_magic" value="Магия">
+                                    <label class="form-check-label" for="cat_magic">Магия</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_homes" value="Домики">
+                                    <label class="form-check-label" for="cat_homes">Домики</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_pets" value="Питомцы">
+                                    <label class="form-check-label" for="cat_pets">Питомцы</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_cars" value="Машины">
+                                    <label class="form-check-label" for="cat_cars">Машины</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_smiles" value="Смайлы">
+                                    <label class="form-check-label" for="cat_smiles">Смайлы</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_scenes" value="Сцены">
+                                    <label class="form-check-label" for="cat_scenes">Сцены</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_furniture" value="Мебель">
+                                    <label class="form-check-label" for="cat_furniture">Мебель</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="cat_other">
+                                    <label class="form-check-label" for="cat_other">Другие категории</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Теги -->
+                    <div class="mb-4">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label for="tags" class="form-label">Теги</label>
+                                <input class="form-control" id="tags" name="tags" placeholder="Выберите теги...">
+                                <div class="invalid-feedback">Пожалуйста, выберите действительный тег.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Дата добавления -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Дата добавления:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="dateFrom" class="form-label">С</label>
+                                <input type="date" class="form-control" id="dateFrom">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="dateTo" class="form-label">По</label>
+                                <input type="date" class="form-control" id="dateTo">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small>
+                            Оставьте поисковый запрос пустым, чтобы найти все вещи выбранных
+                            категорий и тегов.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary"
+                        onclick="clearAdvancedSearch()">Очистить</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="performAdvancedSearch()">Найти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous"></script>
+</body>
+
 </html>
-
-

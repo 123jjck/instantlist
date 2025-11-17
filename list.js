@@ -1,10 +1,10 @@
 /*
     InstantList JS
         by Jjck
-            2023
+            2025
 */
 
-const goodTypeMap = { // TODO add more types
+const goodTypeMap = {
     1: 'Одежда',
     4: 'Шапки/Причёски',
     10: 'Еда (крошки)',
@@ -66,20 +66,464 @@ const goodTypeMap = { // TODO add more types
     119: 'Наклейки'
 };
 
+const tagsMap = {
+    1: "acces",
+    4: "dinosaur",
+    5: "zyabr",
+    6: "inhome",
+    7: "beast",
+    8: "screw",
+    9: "table",
+    10: "22c",
+    11: "costume",
+    12: "dress",
+    13: "farm",
+    14: "club",
+    15: "clubhouse",
+    16: "desert",
+    17: "man",
+    18: "drink",
+    19: "facade",
+    20: "food",
+    21: "woman",
+    22: "ground",
+    23: "instrument",
+    24: "menu",
+    25: "cloth",
+    26: "scene",
+    27: "slotmachine",
+    28: "wallpaper",
+    33: "back",
+    34: "boot",
+    35: "cap",
+    36: "smile",
+    37: "phone",
+    38: "body_parts",
+    42: "sugar",
+    43: "movie",
+    44: "turn",
+    45: "home",
+    46: "house",
+    47: "furniture",
+    48: "soft",
+    50: "cabinet",
+    51: "light",
+    52: "tech",
+    53: "decor",
+    54: "tropical",
+    55: "magic",
+    56: "transform",
+    57: "mage",
+    58: "super",
+    59: "forces",
+    60: "pet_game",
+    61: "pet_clothes",
+    62: "pet_food",
+    63: "pet_sleep",
+    64: "pets",
+    65: "pet_elixir",
+    66: "pet_egg",
+    67: "pet_rays",
+    68: "pet_battle",
+    69: "pet_babies",
+    70: "rolyjoke",
+    71: "powder",
+    72: "heroes",
+    73: "insects",
+    74: "smiles/stickers",
+    75: "stickers"
+};
+
+// ============================================================
+// Вспомогательные классы
+// ============================================================
+
+/**
+ * Менеджер для работы с cookies
+ */
+class CookieManager {
+    static get(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            const cookieValue = parts.pop().split(';').shift();
+            try {
+                return decodeURIComponent(cookieValue);
+            } catch (e) {
+                return cookieValue;
+            }
+        }
+        return null;
+    }
+
+    static set(name, value, days = 365) {
+        const expires = new Date(Date.now() + days * 864e5).toUTCString();
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    }
+
+    static delete(name) {
+        this.set(name, '', -1);
+    }
+}
+
+/**
+ * Утилиты для нормализации строк
+ */
+class StringNormalizer {
+    static normalize(str) {
+        return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '').trim();
+    }
+
+    static normalizeKeepQuotes(str) {
+        return str.toLowerCase().replace(/ё/g, 'е').trim();
+    }
+}
+
+/**
+ * Менеджер настроек приложения
+ */
+class SettingsManager {
+    constructor() {
+        this.columnSettings = this.getDefaultColumnSettings();
+        this.generalSettings = this.getDefaultGeneralSettings();
+    }
+
+    getDefaultColumnSettings() {
+        return {
+            colType: true,
+            colPreview: true,
+            colSwf: true,
+            colPublishDate: true,
+            colTags: false,
+            colUsualTickets: false,
+            colMagicTickets: false
+        };
+    }
+
+    getDefaultGeneralSettings() {
+        return {
+            itemsPerPage: 25,
+            showOnlyStoreItems: false
+        };
+    }
+
+    loadFromCookies() {
+        const columnSettings = CookieManager.get('columnSettings');
+        const generalSettings = CookieManager.get('generalSettings');
+
+        if (columnSettings) {
+            try {
+                this.columnSettings = JSON.parse(columnSettings);
+            } catch (e) {
+                console.warn('Ошибка при загрузке настроек столбцов:', e);
+            }
+        }
+
+        if (generalSettings) {
+            try {
+                this.generalSettings = JSON.parse(generalSettings);
+            } catch (e) {
+                console.warn('Ошибка при загрузке общих настроек:', e);
+            }
+        }
+
+        return this;
+    }
+
+    saveToCookies() {
+        CookieManager.set('columnSettings', JSON.stringify(this.columnSettings));
+        CookieManager.set('generalSettings', JSON.stringify(this.generalSettings));
+    }
+
+    reset() {
+        this.columnSettings = this.getDefaultColumnSettings();
+        this.generalSettings = this.getDefaultGeneralSettings();
+        CookieManager.delete('columnSettings');
+        CookieManager.delete('generalSettings');
+    }
+
+    updateFromDOM() {
+        this.columnSettings = {
+            colType: document.getElementById('colType').checked,
+            colPreview: document.getElementById('colPreview').checked,
+            colSwf: document.getElementById('colSwf').checked,
+            colPublishDate: document.getElementById('colPublishDate').checked,
+            colTags: document.getElementById('colTags').checked,
+            colUsualTickets: document.getElementById('colUsualTickets').checked,
+            colMagicTickets: document.getElementById('colMagicTickets').checked
+        };
+
+        this.generalSettings = {
+            itemsPerPage: parseInt(document.getElementById('itemsPerPageSelect').value),
+            showOnlyStoreItems: document.getElementById('showOnlyStoreItems').checked
+        };
+    }
+
+    applyToDOM() {
+        const colTypeEl = document.getElementById('colType');
+        const colPreviewEl = document.getElementById('colPreview');
+        const colSwfEl = document.getElementById('colSwf');
+        const colPublishDateEl = document.getElementById('colPublishDate');
+        const colTagsEl = document.getElementById('colTags');
+        const colUsualTicketsEl = document.getElementById('colUsualTickets');
+        const colMagicTicketsEl = document.getElementById('colMagicTickets');
+        const itemsPerPageEl = document.getElementById('itemsPerPageSelect');
+        const showOnlyStoreItemsEl = document.getElementById('showOnlyStoreItems');
+
+        if (colTypeEl) colTypeEl.checked = this.columnSettings.colType !== false;
+        if (colPreviewEl) colPreviewEl.checked = this.columnSettings.colPreview !== false;
+        if (colSwfEl) colSwfEl.checked = this.columnSettings.colSwf !== false;
+        if (colPublishDateEl) colPublishDateEl.checked = this.columnSettings.colPublishDate !== false;
+        if (colTagsEl) colTagsEl.checked = this.columnSettings.colTags !== false;
+        if (colUsualTicketsEl) colUsualTicketsEl.checked = this.columnSettings.colUsualTickets !== false;
+        if (colMagicTicketsEl) colMagicTicketsEl.checked = this.columnSettings.colMagicTickets !== false;
+
+        if (itemsPerPageEl && this.generalSettings.itemsPerPage) {
+            itemsPerPageEl.value = this.generalSettings.itemsPerPage;
+        }
+
+        if (showOnlyStoreItemsEl) {
+            showOnlyStoreItemsEl.checked = this.generalSettings.showOnlyStoreItems === true;
+        }
+    }
+}
+
+/**
+ * Рендерер элементов таблицы
+ */
+class ItemRenderer {
+    constructor(domain, fsPath, columnSettings) {
+        this.domain = domain;
+        this.fsPath = fsPath;
+        this.columnSettings = columnSettings;
+    }
+
+    parseTags(tagsString) {
+        return tagsString.split(',').map(tag => tag.trim());
+    }
+
+    render(item) {
+        let html = '<tr>';
+        html += `<td>${item['Id']}</td>`;
+        html += `<td>${item['Name']}</td>`;
+
+        if (this.columnSettings.colType) {
+            html += `<td class="col-type">${item['Type']}</td>`;
+        }
+
+        if (this.columnSettings.colPreview) {
+            html += `<td class="col-preview"><img style="width: 8.1rem" class="img-fluid" src="${this.domain}/${this.fsPath}/${item['PicUrl']}" alt=""/></td>`;
+        }
+
+        if (this.columnSettings.colSwf) {
+            html += `<td class="col-swf"><a href="${this.domain}/${this.fsPath}/${item['SwfUrl']}" class="text-decoration-none" target="_blank">${item['SwfUrl']}</a></td>`;
+        }
+
+        if (this.columnSettings.colPublishDate) {
+            html += `<td class="col-publish-date">${item['PublishDate']}</td>`;
+        }
+
+        if (this.columnSettings.colTags) {
+            let tagsHtml = '';
+
+            if (item['Tags']) {
+                const tags = this.parseTags(item['Tags']);
+                tagsHtml = tags.map(tagId => {
+                    const tagName = tagsMap[tagId.trim()] || tagId.trim();
+                    return `<span class="badge bg-secondary me-1 mb-1">${tagName}</span>`;
+                }).join('');
+            } else {
+                tagsHtml = '—';
+            }
+
+            html += `<td class="col-tags">${tagsHtml}</td>`;
+        }
+
+        if (this.columnSettings.colUsualTickets) {
+            html += `<td class="col-usual-tickets">${item['UsualTickets'] >= 0 ? item['UsualTickets'] : '—'}</td>`;
+        }
+
+        if (this.columnSettings.colMagicTickets) {
+            html += `<td class="col-magic-tickets">${item['MagicTickets'] >= 0 ? item['MagicTickets'] : '—'}</td>`;
+        }
+
+        html += `</tr>`;
+        return html;
+    }
+}
+
+/**
+ * Движок поиска
+ */
+class SearchEngine {
+    highlightText(text, query) {
+        const normalizedText = StringNormalizer.normalizeKeepQuotes(text);
+        const normalizedQuery = StringNormalizer.normalize(query);
+        let result = '';
+        let queryWords = normalizedQuery.split(' ');
+
+        for (let letterIndex = 0; letterIndex < text.length; letterIndex++) {
+            for (let word of queryWords) {
+                if (letterIndex === normalizedText.lastIndexOf(word)) {
+                    result += '<mark>';
+                }
+                if (letterIndex === (normalizedText.lastIndexOf(word) + word.length)) {
+                    result += '</mark>';
+                }
+            }
+            result += text[letterIndex];
+        }
+
+        return result;
+    }
+
+    search(query, items) {
+        const results = [];
+        query = query.trim();
+
+        if (query.length < 2 && isNaN(query)) {
+            return results;
+        }
+
+        const normalizedQuery = StringNormalizer.normalize(query);
+
+        for (let item of items) {
+            const normalizedName = StringNormalizer.normalize(item.Name);
+            if (normalizedName.indexOf(normalizedQuery) !== -1 || item.Id == query) {
+                const itemCopy = Object.assign({}, item);
+                itemCopy.Name = this.highlightText(item.Name, query);
+                if (item.Id == query) {
+                    itemCopy.Id = '<mark>' + itemCopy.Id + '</mark>';
+                }
+                results.push(itemCopy);
+            }
+        }
+
+        return results;
+    }
+
+    advancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, items) {
+        const results = [];
+
+        for (let item of items) {
+            let matches = true;
+
+            if (query) {
+                const normalizedQuery = StringNormalizer.normalize(query);
+                const normalizedName = StringNormalizer.normalize(item.Name);
+
+                if (exactMatch) {
+                    matches = normalizedName === normalizedQuery;
+                } else {
+                    matches = normalizedName.indexOf(normalizedQuery) !== -1 || item.Id == query;
+                }
+            }
+
+            if (matches && selectedCategories.length > 0) {
+                matches = selectedCategories.includes(item.Type);
+            }
+
+            if (matches && selectedTags.length > 0) {
+                if (!item.Tags) {
+                    matches = false;
+                } else {
+                    const itemTags = item.Tags.split(',').map(tag => {
+                        const tagId = tag.trim();
+                        return tagsMap[tagId] || tagId;
+                    });
+
+                    matches = selectedTags.some(selectedTag => {
+                        return itemTags.some(itemTag =>
+                            StringNormalizer.normalize(itemTag).indexOf(StringNormalizer.normalize(selectedTag)) !== -1
+                        );
+                    });
+                }
+            }
+
+            if (matches && (dateFrom || dateTo)) {
+                const itemDateParts = item.PublishDate.split('.');
+                if (itemDateParts.length === 3) {
+                    const itemDate = new Date(itemDateParts[2], itemDateParts[1] - 1, itemDateParts[0]);
+
+                    if (dateFrom) {
+                        const fromDate = new Date(dateFrom);
+                        if (itemDate < fromDate) {
+                            matches = false;
+                        }
+                    }
+
+                    if (dateTo && matches) {
+                        const toDate = new Date(dateTo);
+                        toDate.setHours(23, 59, 59, 999);
+                        if (itemDate > toDate) {
+                            matches = false;
+                        }
+                    }
+                } else {
+                    matches = false;
+                }
+            }
+
+            if (matches) {
+                const itemCopy = Object.assign({}, item);
+
+                if (query && !exactMatch) {
+                    itemCopy.Name = this.highlightText(item.Name, query);
+                }
+
+                if (query && item.Id == query) {
+                    itemCopy.Id = '<mark>' + itemCopy.Id + '</mark>';
+                }
+
+                results.push(itemCopy);
+            }
+        }
+
+        return results;
+    }
+}
+
+// ============================================================
+// Основные классы
+// ============================================================
+
 class InstantList {
     constructor(searchInput, resources, config) {
         this.search = searchInput;
-        this.search.addEventListener('keydown', function(e) {
+        this.config = config;
+
+        this.settingsManager = new SettingsManager().loadFromCookies();
+        this.searchEngine = new SearchEngine();
+
+        this.config.itemsPerPage = this.settingsManager.generalSettings.itemsPerPage;
+
+        this.table = new Table(
+            document.getElementById(this.config.tableHolderId),
+            document.getElementById(this.config.pagesHolderId),
+            this.config,
+            this.settingsManager
+        );
+
+        this.items = this.buildItemsArray(resources[0], resources[1], resources[2], resources[3]);
+        this.allItems = [...this.items];
+
+        this.settingsManager.applyToDOM();
+
+        this.initEventListeners();
+        this.init();
+    }
+
+    initEventListeners() {
+        this.search.addEventListener('keydown', (e) => {
             if (e.key === "Enter") {
-                location.href = "#search_" + encodeURIComponent(this.value);
+                const query = e.target.value.trim();
+                if (query) {
+                    window.location.hash = `#?q=${encodeURIComponent(query)}`;
+                } else {
+                    window.location.hash = '#1';
+                }
             }
         });
-        
-        this.config = config;
-        this.table = new Table(document.getElementById(this.config.tableHolderId), document.getElementById(this.config.pagesHolderId), this.config.itemsPerPage, this.config.domain, this.config.fsPath);
-        this.items = this.buildItemsArray(resources[0], resources[1], resources[2], resources[3]);
-
-        this.init();
     }
 
     init() {
@@ -89,23 +533,62 @@ class InstantList {
 
     goToPage(page = 1) {
         if (page <= 0) page = 1;
-        let from = ((page - 1) * this.config.itemsPerPage) + 1;
-        let to = page * this.config.itemsPerPage;
-        window.scrollTo({
-            top: 0
-        });
+        const from = ((page - 1) * this.config.itemsPerPage) + 1;
+        const to = page * this.config.itemsPerPage;
+
+        window.scrollTo({ top: 0 });
         this.table.renderTable(this.items, page, from, to);
     }
 
     handleHashChange() {
-        if (!window.location.hash.includes('#search_')) {
-            this.table.titleHolder.innerHTML = "Вещи";
-            this.search.value = '';
-            this.goToPage(+window.location.hash.replace('#', ''));
+        this.applyStoreFilter();
+
+        const hash = window.location.hash;
+
+        // Если хэш начинается с #?, парсим query-параметры
+        if (hash.startsWith('#?')) {
+            this.handleSearchWithParams();
             return;
         }
-        let query = this.search.value = decodeURIComponent(window.location.hash.replace("#search_", ""));
-        this.table.renderSearchResults(query, this.items);
+
+        // Пустой хэш или номер страницы
+        this.table.setTitle("Вещи");
+        this.search.value = '';
+        const page = parseInt(hash.replace('#', '')) || 1;
+        this.goToPage(page);
+    }
+
+    handleSearchWithParams() {
+        const paramsString = window.location.hash.replace('#?', '');
+        const params = new URLSearchParams(paramsString);
+
+        const query = params.get('q') || '';
+        const exactMatch = params.get('exact') === 'true';
+        const selectedCategories = params.get('cats') ? params.get('cats').split(',') : [];
+        const selectedTags = params.get('tags') ? params.get('tags').split(',') : [];
+        const dateFrom = params.get('from') || '';
+        const dateTo = params.get('to') || '';
+
+        // Обновляем поле поиска
+        this.search.value = query;
+
+        // Определяем, это простой или расширенный поиск
+        const isAdvancedSearch = exactMatch || selectedCategories.length > 0 ||
+                                  selectedTags.length > 0 || dateFrom || dateTo;
+
+        if (isAdvancedSearch) {
+            // Расширенный поиск
+            const results = this.searchEngine.advancedSearch(
+                query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, this.items
+            );
+            this.table.renderAdvancedSearchResults(
+                results, query, selectedCategories, selectedTags, dateFrom, dateTo
+            );
+        } else {
+            // Простой поиск
+            const results = this.searchEngine.search(query, this.items);
+            this.table.renderSearchResults(results);
+        }
     }
 
     getItemType(goodTypeId) {
@@ -113,139 +596,491 @@ class InstantList {
     }
 
     buildItemsArray(t, g, mr, tr) {
-        // TODO tags
-        let items = [];
-        for (let item of Object.values(g)) {
-            if (this.config['layerIds'] !== '*' && !this.config['layerIds'].includes(item['LayerId'])) continue;
+        const items = [];
+        for (const item of Object.values(g)) {
+            if (this.config['layerIds'] !== '*' && !this.config['layerIds'].includes(item['LayerId'])) {
+                continue;
+            }
             items.push({
                 Id: item['Id'],
                 Name: tr[item['TRId']] !== undefined ? tr[item['TRId']]['H'] : 'Без названия',
                 Type: this.getItemType(item['GoodTypeId']),
                 PicUrl: mr[-item['MRId']] !== undefined ? mr[-item['MRId']]['Url'] : '',
-                SwfUrl: mr[item['MRId']] !== undefined ? mr[item['MRId']]['Url'] : undefined
+                SwfUrl: mr[item['MRId']] !== undefined ? mr[item['MRId']]['Url'] : undefined,
+                PublishDate: item['PublishDate'] ? new Date(item['PublishDate']).toLocaleDateString('ru-RU') : 'Не указана',
+                Tags: item['Tags'],
+                UsualTickets: item['UsualTickets'] !== undefined ? item['UsualTickets'] : 0,
+                MagicTickets: item['MagicTickets'] !== undefined ? item['MagicTickets'] : 0
             });
         }
         return items;
     }
+
+    applyStoreFilter() {
+        const showOnlyStoreItemsEl = document.getElementById('showOnlyStoreItems');
+        if (showOnlyStoreItemsEl && showOnlyStoreItemsEl.checked) {
+            this.items = this.allItems.filter(item => item.Tags && item.Tags.trim() !== '');
+        } else {
+            this.items = [...this.allItems];
+        }
+    }
+
+    applySettings() {
+        this.settingsManager.updateFromDOM();
+        this.settingsManager.saveToCookies();
+
+        this.config.itemsPerPage = this.settingsManager.generalSettings.itemsPerPage;
+        this.table.updateItemsPerPage(this.config.itemsPerPage);
+
+        this.applyStoreFilter();
+
+        // Перезапускаем обработчик хэша для обновления отображения
+        this.handleHashChange();
+    }
+
+    resetSettings() {
+        this.settingsManager.reset();
+        this.settingsManager.applyToDOM();
+
+        this.config.itemsPerPage = this.settingsManager.generalSettings.itemsPerPage;
+        this.table.updateItemsPerPage(this.config.itemsPerPage);
+
+        this.items = [...this.allItems];
+
+        // Перезапускаем обработчик хэша для обновления отображения
+        this.handleHashChange();
+    }
+
+    performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo) {
+        // Кодируем параметры в URL
+        const params = new URLSearchParams();
+
+        if (query) params.set('q', query);
+        if (exactMatch) params.set('exact', 'true');
+        if (selectedCategories.length > 0) params.set('cats', selectedCategories.join(','));
+        if (selectedTags.length > 0) params.set('tags', selectedTags.join(','));
+        if (dateFrom) params.set('from', dateFrom);
+        if (dateTo) params.set('to', dateTo);
+
+        // Устанавливаем хэш с параметрами
+        const paramsString = params.toString();
+        if (paramsString) {
+            window.location.hash = `#?${paramsString}`;
+        } else {
+            // Если нет параметров, показываем первую страницу
+            window.location.hash = '#1';
+        }
+    }
 }
 
 class Table {
-    constructor(tableHolder, pageHolder, itemsPerPage, domain, fsPath) {
+    constructor(tableHolder, pageHolder, config, settingsManager) {
         this.holder = tableHolder;
         this.pageHolder = pageHolder;
         this.titleHolder = document.getElementById('title');
-        this.itemsPerPage = itemsPerPage;
+        this.config = config;
+        this.settingsManager = settingsManager;
+        this.itemRenderer = new ItemRenderer(config.domain, config.fsPath, settingsManager.columnSettings);
+    }
 
-        this.domain = domain;
-        this.fsPath = fsPath;
+    updateItemsPerPage(itemsPerPage) {
+        this.config.itemsPerPage = itemsPerPage;
+    }
+
+    setTitle(title) {
+        this.titleHolder.innerHTML = title;
+    }
+
+    getTableHead() {
+        const settings = this.settingsManager.columnSettings;
+        let head = '<thead><tr>';
+        head += '<th>ID</th>';
+        head += '<th>Название</th>';
+        if (settings.colType) head += '<th class="col-type">Тип</th>';
+        if (settings.colPreview) head += '<th class="col-preview">Превью</th>';
+        if (settings.colSwf) head += '<th class="col-swf">SWF файл</th>';
+        if (settings.colPublishDate) head += '<th class="col-publish-date">Дата добавления</th>';
+        if (settings.colTags) head += '<th class="col-tags">Теги</th>';
+        if (settings.colUsualTickets) head += '<th class="col-usual-tickets">Смешинки</th>';
+        if (settings.colMagicTickets) head += '<th class="col-magic-tickets">Румбики</th>';
+        head += '</tr></thead>';
+        return head;
+    }
+
+    applyColumnVisibility() {
+        const settings = this.settingsManager.columnSettings;
+        const style = document.getElementById('columnStyles') || document.createElement('style');
+        style.id = 'columnStyles';
+
+        let css = '';
+        if (!settings.colType) css += '.col-type { display: none !important; } ';
+        if (!settings.colPreview) css += '.col-preview { display: none !important; } ';
+        if (!settings.colSwf) css += '.col-swf { display: none !important; } ';
+        if (!settings.colPublishDate) css += '.col-publish-date { display: none !important; } ';
+        if (!settings.colTags) css += '.col-tags { display: none !important; } ';
+        if (!settings.colUsualTickets) css += '.col-usual-tickets { display: none !important; } ';
+        if (!settings.colMagicTickets) css += '.col-magic-tickets { display: none !important; } ';
+
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
+    renderPagination(pagesCount, currentPage) {
+        let paginationHTML = '<nav aria-label="..."><ul class="pagination pagination-sm flex-wrap">';
+        for (let i = 1; i <= pagesCount; i++) {
+            if (i === currentPage) {
+                paginationHTML += `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span><li>`;
+            } else {
+                paginationHTML += `<li class="page-item"><a class="page-link" href="#${i}">${i}</a></li> `;
+            }
+        }
+        paginationHTML += '</ul></nav>';
+        return paginationHTML;
     }
 
     renderTable(items, page, from, to) {
-        /* Table */
-        let html = '<table class="table table-striped table-borderless"><thead>';
+        // Обновляем renderer с актуальными настройками
+        this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
-        html += '<th>ID</th>';
-        html += '<th>Название</th>';
-        html += '<th>Тип</th>';
-        html += '<th>Превью</th>';
-        html += '<th>SWF файл</th>';
+        let html = '<table class="table table-striped table-borderless">';
+        html += this.getTableHead();
+        html += '<tbody>';
 
-        html += '</thead><tbody>';
-        html += this.renderItems(items, from, to);
-        html += '</tbody></table>';
-
-        this.holder.innerHTML = html;
-
-        /* Pagination */
-        let pages = Math.ceil(items.length / this.itemsPerPage);
-        let paginationHtml = '<nav aria-label="..."><ul class="pagination pagination-sm d-flex flex-wrap">';
-        for (let i = 1; i <= pages; i++) {
-            paginationHtml += i === page ? `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span><li>` : `<li class="page-item"><a class="page-link" href="#${i}">${i}</a></li> `;
-        }
-        paginationHtml += '</ul></nav>';
-        this.pageHolder.innerHTML = paginationHtml;
-    }
-
-    renderItems(items, from, to) {
-        let html = '';
         for (let i = from - 1; i < to; i++) {
-            let item = items[i];
-            if(item == undefined) continue;
-            html += this.renderElement(item);
-        }
-        return html;
-    }
-
-    renderElement(item) {
-        let html = '<tr>';
-        html += `<td>${item['Id']}</td>`;
-        html += `<td>${item['Name']}</td>`;
-        html += `<td>${item['Type']}</td>`;
-        html += `<td><img style="width: 8.1rem" class="img-fluid" src="${this.domain}/${this.fsPath}/${item['PicUrl']}" alt=""/></td>`;
-        html += `<td><a href="${this.domain}/${this.fsPath}/${item['SwfUrl']}" target="_blank">${item['SwfUrl']}</a></td>`;
-        html += `</tr>`;
-        return html;
-    }
-
-    normalizeString(str) {
-        return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '').trim();
-    }
-
-    normalizeStringKeepQuotes(str) {
-        return str.toLowerCase().replace(/ё/g, 'е').trim();
-    }
-    
-    renderSearchResults(query, items) {
-        let html = '<table class="table table-striped table-borderless"><thead>';
-
-        html += '<th>ID</th>';
-        html += '<th>Название</th>';
-        html += '<th>Тип</th>';
-        html += '<th>Превью</th>';
-        html += '<th>SWF файл</th>';
-
-        html += '</thead><tbody>';
-
-        query = query.trim();
-        if (query.length >= 2 || !isNaN(query)) {
-            query = this.normalizeString(query);
-            for (let i in items) {
-                let normalizedName = this.normalizeString(items[i].Name);
-                if (normalizedName.indexOf(query) !== -1 || items[i].Id == query) {
-                    let itemToRender = Object.assign({}, items[i]); // copy item
-                    let normalizedNameWithQuotes = this.normalizeStringKeepQuotes(items[i].Name);
-
-                    // Highlight found words
-                    itemToRender["Name"] = '';
-                    let queryWords = query.split(' ');
-
-                    for(let letterIndex = 0; letterIndex < items[i]["Name"].length; letterIndex++) {
-                        for(let word of queryWords) {
-                            if(letterIndex == normalizedNameWithQuotes.lastIndexOf(word)) {
-                                itemToRender["Name"] += '<mark>';
-                            }
-                            if(letterIndex == (normalizedNameWithQuotes.lastIndexOf(word) + word.length)) {
-                                itemToRender["Name"] += '</mark>';
-                            }
-                        }
-                        itemToRender["Name"] += items[i]["Name"][letterIndex];
-                    }
-                    if(items[i].Id == query) itemToRender["Id"] = '<mark>' + itemToRender['Id'] + '</mark>';
-                    html += this.renderElement(itemToRender);
-                }
+            const item = items[i];
+            if (item !== undefined) {
+                html += this.itemRenderer.render(item);
             }
         }
 
-        if (html === '<table class="table table-striped table-borderless"><thead><th>ID</th><th>Название</th><th>Тип</th><th>Превью</th><th>SWF файл</th></thead><tbody>') {
-            html = "<h2> К сожалению, мы ничего не нашли! </h2>";
-        } else {
-            html += '</tbody></table>';
+        html += '</tbody></table>';
+
+        this.holder.innerHTML = html;
+        this.applyColumnVisibility();
+        this.pageHolder.innerHTML = this.renderPagination(Math.ceil(items.length / this.config.itemsPerPage), page);
+    }
+
+    renderSearchResults(results) {
+        // Обновляем renderer с актуальными настройками
+        this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
+
+        let html = '<table class="table table-striped table-borderless">';
+        html += this.getTableHead();
+        html += '<tbody>';
+
+        for (let item of results) {
+            html += this.itemRenderer.render(item);
+        }
+
+        html += '</tbody></table>';
+
+        if (results.length === 0) {
+            html = '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>';
         }
 
         this.pageHolder.innerHTML = '';
-        this.titleHolder.innerHTML = "Результаты поиска";
+        this.setTitle("Результаты поиска");
         this.holder.innerHTML = html;
+        this.applyColumnVisibility();
+    }
+
+    renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo) {
+        // Обновляем renderer с актуальными настройками
+        this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
+
+        let html = '<table class="table table-striped table-borderless">';
+        html += this.getTableHead();
+        html += '<tbody>';
+
+        for (let item of results) {
+            html += this.itemRenderer.render(item);
+        }
+
+        html += '</tbody></table>';
+
+        if (results.length === 0) {
+            html = '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>';
+            if (selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo) {
+                html += '<p class="text-muted">Попробуйте изменить критерии поиска или убрать некоторые фильтры.</p>';
+            }
+        }
+
+        this.pageHolder.innerHTML = '';
+
+        // Формируем заголовок результатов
+        const titleParts = [];
+        if (query) titleParts.push(`"${query}"`);
+        if (selectedCategories.length > 0) titleParts.push(`категории: ${selectedCategories.join(', ')}`);
+        if (selectedTags.length > 0) titleParts.push(`теги: ${selectedTags.join(', ')}`);
+        if (dateFrom && dateTo) titleParts.push(`даты: ${dateFrom} - ${dateTo}`);
+        else if (dateFrom) titleParts.push(`с даты: ${dateFrom}`);
+        else if (dateTo) titleParts.push(`по дату: ${dateTo}`);
+
+        const pluralForm = results.length === 1 ? '' : results.length < 5 ? 'а' : 'ов';
+        this.setTitle(`Расширенный поиск${titleParts.length > 0 ? ' — ' + titleParts.join(' | ') : ''} (${results.length} результат${pluralForm})`);
+        this.holder.innerHTML = html;
+        this.applyColumnVisibility();
     }
 }
 
-window.onload = () => new InstantList(document.getElementById('instantlist_search'), [[], g, mr, tr], window.config);
+// ============================================================
+// Модальные окна
+// ============================================================
+
+/**
+ * Управление модальным окном настроек
+ */
+class SettingsModal {
+    constructor(instantList) {
+        this.instantList = instantList;
+    }
+
+    open() {
+        const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+        modal.show();
+    }
+
+    apply() {
+        this.instantList.applySettings();
+        this.close();
+        this.showNotification('Настройки успешно применены!', 'success');
+    }
+
+    reset() {
+        this.instantList.resetSettings();
+
+        const settingsModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+        if (settingsModal) {
+            settingsModal.hide();
+        }
+
+        this.showNotification('Настройки успешно сброшены!', 'success');
+    }
+
+    close() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+        if (modal) {
+            modal.hide();
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+}
+
+/**
+ * Управление модальным окном расширенного поиска
+ */
+class AdvancedSearchModal {
+    constructor(instantList) {
+        this.instantList = instantList;
+        this.tagsTagify = null;
+    }
+
+    open() {
+        this.populateTagsSelect();
+        this.restoreFromHash();
+        const modal = new bootstrap.Modal(document.getElementById('advancedSearchModal'));
+        modal.show();
+    }
+
+    restoreFromHash() {
+        const hash = window.location.hash;
+
+        // Если это не поиск с параметрами, ничего не делаем
+        if (!hash.startsWith('#?')) {
+            return;
+        }
+
+        // Парсим параметры
+        const paramsString = hash.replace('#?', '');
+        const params = new URLSearchParams(paramsString);
+
+        // Восстанавливаем текстовый запрос
+        const query = params.get('q') || '';
+        if (query) {
+            document.getElementById('advancedSearchQuery').value = query;
+        }
+
+        // Восстанавливаем точное совпадение
+        const exactMatch = params.get('exact') === 'true';
+        document.getElementById('exactMatchSearch').checked = exactMatch;
+
+        // Восстанавливаем категории
+        const categories = params.get('cats') ? params.get('cats').split(',') : [];
+        categories.forEach(cat => {
+            const checkbox = Array.from(document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]'))
+                .find(cb => cb.value === cat);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+
+        // Восстанавливаем теги
+        const tags = params.get('tags') ? params.get('tags').split(',') : [];
+        if (tags.length > 0 && this.tagsTagify) {
+            this.tagsTagify.addTags(tags);
+        }
+
+        // Восстанавливаем даты
+        const dateFrom = params.get('from') || '';
+        const dateTo = params.get('to') || '';
+        if (dateFrom) {
+            document.getElementById('dateFrom').value = dateFrom;
+        }
+        if (dateTo) {
+            document.getElementById('dateTo').value = dateTo;
+        }
+    }
+
+    populateTagsSelect() {
+        const tagsInput = document.getElementById('tags');
+
+        if (this.tagsTagify) {
+            this.tagsTagify.destroy();
+        }
+
+        const whitelist = Object.entries(tagsMap).map(([tagId, tagValue]) => ({
+            value: tagValue,
+            id: tagId,
+            label: `${tagValue} (${tagId})`
+        }));
+
+        this.tagsTagify = new Tagify(tagsInput, {
+            whitelist: whitelist,
+            enforceWhitelist: true,
+            editTags: false,
+            dropdown: {
+                maxItems: 20,
+                enabled: 0,
+                closeOnSelect: false,
+                searchKeys: ['value', 'id', 'label']
+            },
+            templates: {
+                dropdownItem: function(item) {
+                    return `<div ${this.getAttributes(item)}
+                                class='${this.settings.classNames.dropdownItem} ${item.class ? item.class : ""}'
+                                tabindex="0"
+                                role="option">
+                                ${item.label || item.value}
+                            </div>`;
+                }
+            }
+        });
+    }
+
+    clear() {
+        document.getElementById('advancedSearchQuery').value = '';
+        document.getElementById('exactMatchSearch').checked = false;
+
+        const categoryCheckboxes = document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]');
+        categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
+
+        if (this.tagsTagify) {
+            this.tagsTagify.removeAllTags();
+        }
+
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+    }
+
+    clearAndResetView() {
+        this.clear();
+        window.location.hash = '#1';
+    }
+
+    perform() {
+        const query = document.getElementById('advancedSearchQuery').value.trim();
+        const exactMatch = document.getElementById('exactMatchSearch').checked;
+
+        const selectedCategories = [];
+        const categoryCheckboxes = document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]:checked');
+        categoryCheckboxes.forEach(checkbox => {
+            if (checkbox.value) {
+                selectedCategories.push(checkbox.value);
+            }
+        });
+
+        const selectedTags = [];
+        if (this.tagsTagify) {
+            const tagifyValue = this.tagsTagify.value;
+            tagifyValue.forEach(tag => {
+                if (tag.value) {
+                    selectedTags.push(tag.value);
+                }
+            });
+        }
+
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+
+        this.instantList.performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo);
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('advancedSearchModal'));
+        modal.hide();
+    }
+}
+
+// ============================================================
+// Глобальные переменные и функции
+// ============================================================
+
+let instantListInstance;
+let settingsModal;
+let advancedSearchModal;
+
+// Глобальные функции для обратной совместимости с HTML
+function openSettingsModal() {
+    settingsModal.open();
+}
+
+function applyColumnSettings() {
+    settingsModal.apply();
+}
+
+function resetSettings() {
+    settingsModal.reset();
+}
+
+function showNotification(message, type = 'info') {
+    settingsModal.showNotification(message, type);
+}
+
+function openAdvancedSearchModal() {
+    advancedSearchModal.open();
+}
+
+function clearAdvancedSearch() {
+    advancedSearchModal.clear();
+}
+
+function performAdvancedSearch() {
+    advancedSearchModal.perform();
+}
+
+// Инициализация приложения
+window.onload = () => {
+    instantListInstance = new InstantList(
+        document.getElementById('instantlist_search'),
+        [[], g, mr, tr],
+        window.config
+    );
+
+    settingsModal = new SettingsModal(instantListInstance);
+    advancedSearchModal = new AdvancedSearchModal(instantListInstance);
+};

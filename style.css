@@ -1,0 +1,126 @@
+/*
+    InstantList JS - Styles
+        by Jjck
+            2025
+*/
+
+/* Отключаем плавную прокрутку */
+html {
+    scroll-behavior: auto !important;
+}
+
+/* Стили подсветки найденного текста */
+.mark,
+mark {
+    padding: 0 !important;
+    background-color: #6c757d2e !important;
+}
+
+/* Стили пагинации */
+.page-link {
+    transition: none !important;
+}
+
+.page-item:not(.active) .page-link:hover {
+    background-color: #e9ecef !important;
+}
+
+/* Стили модального окна */
+.modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Принудительное отображение скроллбара */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+}
+
+.form-check-label {
+    user-select: none;
+}
+
+/* Стили таблицы */
+.table td {
+    vertical-align: middle;
+}
+
+.col-tags {
+    max-width: 150px;
+    word-wrap: break-word;
+}
+
+.col-publish-date {
+    min-width: 120px;
+}
+
+.col-usual-tickets,
+.col-magic-tickets {
+    text-align: center;
+    min-width: 80px;
+}
+
+/* Стили для Tagify */
+:root {
+    --tagify-dd-color-primary: #0d6efd;
+    --tagify-dd-bg-color: #fff;
+}
+
+.form-control, #tags {
+    /* Основные переменные Tagify */
+    --tags-border-color: #dee2e6;
+    --tags-hover-border-color: #86b7fe;
+    --tags-focus-border-color: #86b7fe;
+    --tags-disabled-bg: #e9ecef;
+
+    /* Переменные для тегов */
+    --tag-bg: #0d6efd !important;
+    --tag-hover: #0b5ed7;
+    --tag-text-color: #fff;
+    --tag-text-color--edit: #212529;
+    --tag-pad: 0.35em 0.65em;
+    --tag-border-radius: 0.375rem;
+    --tag--min-width: 1ch;
+    --tag--max-width: auto;
+    --tag-inset-shadow-size: 1.35em;
+
+    /* Невалидные теги */
+    --tag-invalid-color: #dc3545;
+    --tag-invalid-bg: rgba(220, 53, 69, 0.1);
+
+    /* Кнопка удаления */
+    --tag-remove-bg: rgba(0, 0, 0, 0.3);
+    --tag-remove-btn-color: #fff;
+    --tag-remove-btn-bg: none;
+    --tag-remove-btn-bg--hover: #c82333;
+
+    /* Input и placeholder */
+    --input-color: #212529;
+    --placeholder-color: #6c757d;
+    --placeholder-color-focus: #adb5bd;
+
+    /* Анимация */
+    --tag-hide-transition: 0.3s;
+    --loader-size: 0.8em;
+
+    /* Readonly */
+    --readonly-striped: 1;
+}
