@@ -1,7 +1,7 @@
 /*
     InstantList JS
         by Jjck
-            2025
+            2026
 */
 
 const goodTypeMap = {
@@ -134,13 +134,6 @@ const tagsMap = {
     75: "stickers"
 };
 
-// ============================================================
-// Вспомогательные классы
-// ============================================================
-
-/**
- * Менеджер для работы с cookies
- */
 class CookieManager {
     static get(name) {
         const value = `; ${document.cookie}`;
@@ -166,9 +159,6 @@ class CookieManager {
     }
 }
 
-/**
- * Утилиты для нормализации строк
- */
 class StringNormalizer {
     static normalize(str) {
         return str.toLowerCase().replace(/ё/g, 'е').replace(/'/g, "").replace(/"/g, '').trim();
@@ -179,9 +169,6 @@ class StringNormalizer {
     }
 }
 
-/**
- * Менеджер настроек приложения
- */
 class SettingsManager {
     constructor() {
         this.columnSettings = this.getDefaultColumnSettings();
@@ -203,7 +190,8 @@ class SettingsManager {
     getDefaultGeneralSettings() {
         return {
             itemsPerPage: 25,
-            showOnlyStoreItems: false
+            showOnlyStoreItems: false,
+            theme: 'system'
         };
     }
 
@@ -227,7 +215,18 @@ class SettingsManager {
             }
         }
 
+        this.applyTheme();
+        this.setupThemeListener();
+
         return this;
+    }
+
+    setupThemeListener() {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (this.generalSettings.theme === 'system') {
+                this.applyTheme();
+            }
+        });
     }
 
     saveToCookies() {
@@ -253,9 +252,11 @@ class SettingsManager {
             colMagicTickets: document.getElementById('colMagicTickets').checked
         };
 
+        const themeSelect = document.getElementById('themeSelect');
         this.generalSettings = {
             itemsPerPage: parseInt(document.getElementById('itemsPerPageSelect').value),
-            showOnlyStoreItems: document.getElementById('showOnlyStoreItems').checked
+            showOnlyStoreItems: document.getElementById('showOnlyStoreItems').checked,
+            theme: themeSelect ? themeSelect.value : 'system'
         };
     }
 
@@ -285,12 +286,33 @@ class SettingsManager {
         if (showOnlyStoreItemsEl) {
             showOnlyStoreItemsEl.checked = this.generalSettings.showOnlyStoreItems === true;
         }
+
+        const themeSelect = document.getElementById('themeSelect');
+        if (themeSelect && this.generalSettings.theme) {
+            themeSelect.value = this.generalSettings.theme;
+        }
+
+        this.applyTheme();
+    }
+
+    applyTheme() {
+        const theme = this.generalSettings.theme || 'system';
+        let effectiveTheme;
+
+        if (theme === 'system') {
+            effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } else {
+            effectiveTheme = theme;
+        }
+
+        if (effectiveTheme === 'dark') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-bs-theme');
+        }
     }
 }
 
-/**
- * Рендерер элементов таблицы
- */
 class ItemRenderer {
     constructor(domain, fsPath, columnSettings) {
         this.domain = domain;
@@ -352,9 +374,6 @@ class ItemRenderer {
     }
 }
 
-/**
- * Движок поиска
- */
 class SearchEngine {
     highlightText(text, query) {
         const normalizedText = StringNormalizer.normalizeKeepQuotes(text);
@@ -483,10 +502,6 @@ class SearchEngine {
     }
 }
 
-// ============================================================
-// Основные классы
-// ============================================================
-
 class InstantList {
     constructor(searchInput, resources, config) {
         this.search = searchInput;
@@ -545,13 +560,11 @@ class InstantList {
 
         const hash = window.location.hash;
 
-        // Если хэш начинается с #?, парсим query-параметры
         if (hash.startsWith('#?')) {
             this.handleSearchWithParams();
             return;
         }
 
-        // Пустой хэш или номер страницы
         this.table.setTitle("Вещи");
         this.search.value = '';
         const page = parseInt(hash.replace('#', '')) || 1;
@@ -569,15 +582,12 @@ class InstantList {
         const dateFrom = params.get('from') || '';
         const dateTo = params.get('to') || '';
 
-        // Обновляем поле поиска
         this.search.value = query;
 
-        // Определяем, это простой или расширенный поиск
         const isAdvancedSearch = exactMatch || selectedCategories.length > 0 ||
                                   selectedTags.length > 0 || dateFrom || dateTo;
 
         if (isAdvancedSearch) {
-            // Расширенный поиск
             const results = this.searchEngine.advancedSearch(
                 query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, this.items
             );
@@ -585,7 +595,6 @@ class InstantList {
                 results, query, selectedCategories, selectedTags, dateFrom, dateTo
             );
         } else {
-            // Простой поиск
             const results = this.searchEngine.search(query, this.items);
             this.table.renderSearchResults(results);
         }
@@ -633,8 +642,6 @@ class InstantList {
         this.table.updateItemsPerPage(this.config.itemsPerPage);
 
         this.applyStoreFilter();
-
-        // Перезапускаем обработчик хэша для обновления отображения
         this.handleHashChange();
     }
 
@@ -646,13 +653,10 @@ class InstantList {
         this.table.updateItemsPerPage(this.config.itemsPerPage);
 
         this.items = [...this.allItems];
-
-        // Перезапускаем обработчик хэша для обновления отображения
         this.handleHashChange();
     }
 
     performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo) {
-        // Кодируем параметры в URL
         const params = new URLSearchParams();
 
         if (query) params.set('q', query);
@@ -662,12 +666,10 @@ class InstantList {
         if (dateFrom) params.set('from', dateFrom);
         if (dateTo) params.set('to', dateTo);
 
-        // Устанавливаем хэш с параметрами
         const paramsString = params.toString();
         if (paramsString) {
             window.location.hash = `#?${paramsString}`;
         } else {
-            // Если нет параметров, показываем первую страницу
             window.location.hash = '#1';
         }
     }
@@ -739,7 +741,6 @@ class Table {
     }
 
     renderTable(items, page, from, to) {
-        // Обновляем renderer с актуальными настройками
         this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
         let html = '<table class="table table-striped table-borderless">';
@@ -761,7 +762,6 @@ class Table {
     }
 
     renderSearchResults(results) {
-        // Обновляем renderer с актуальными настройками
         this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
         let html = '<table class="table table-striped table-borderless">';
@@ -785,7 +785,6 @@ class Table {
     }
 
     renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo) {
-        // Обновляем renderer с актуальными настройками
         this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
         let html = '<table class="table table-striped table-borderless">';
@@ -807,7 +806,6 @@ class Table {
 
         this.pageHolder.innerHTML = '';
 
-        // Формируем заголовок результатов
         const titleParts = [];
         if (query) titleParts.push(`"${query}"`);
         if (selectedCategories.length > 0) titleParts.push(`категории: ${selectedCategories.join(', ')}`);
@@ -823,13 +821,6 @@ class Table {
     }
 }
 
-// ============================================================
-// Модальные окна
-// ============================================================
-
-/**
- * Управление модальным окном настроек
- */
 class SettingsModal {
     constructor(instantList) {
         this.instantList = instantList;
@@ -883,9 +874,6 @@ class SettingsModal {
     }
 }
 
-/**
- * Управление модальным окном расширенного поиска
- */
 class AdvancedSearchModal {
     constructor(instantList) {
         this.instantList = instantList;
@@ -902,26 +890,21 @@ class AdvancedSearchModal {
     restoreFromHash() {
         const hash = window.location.hash;
 
-        // Если это не поиск с параметрами, ничего не делаем
         if (!hash.startsWith('#?')) {
             return;
         }
 
-        // Парсим параметры
         const paramsString = hash.replace('#?', '');
         const params = new URLSearchParams(paramsString);
 
-        // Восстанавливаем текстовый запрос
         const query = params.get('q') || '';
         if (query) {
             document.getElementById('advancedSearchQuery').value = query;
         }
 
-        // Восстанавливаем точное совпадение
         const exactMatch = params.get('exact') === 'true';
         document.getElementById('exactMatchSearch').checked = exactMatch;
 
-        // Восстанавливаем категории
         const categories = params.get('cats') ? params.get('cats').split(',') : [];
         categories.forEach(cat => {
             const checkbox = Array.from(document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]'))
@@ -931,13 +914,11 @@ class AdvancedSearchModal {
             }
         });
 
-        // Восстанавливаем теги
         const tags = params.get('tags') ? params.get('tags').split(',') : [];
         if (tags.length > 0 && this.tagsTagify) {
             this.tagsTagify.addTags(tags);
         }
 
-        // Восстанавливаем даты
         const dateFrom = params.get('from') || '';
         const dateTo = params.get('to') || '';
         if (dateFrom) {
@@ -1036,15 +1017,10 @@ class AdvancedSearchModal {
     }
 }
 
-// ============================================================
-// Глобальные переменные и функции
-// ============================================================
-
 let instantListInstance;
 let settingsModal;
 let advancedSearchModal;
 
-// Глобальные функции для обратной совместимости с HTML
 function openSettingsModal() {
     settingsModal.open();
 }
@@ -1073,7 +1049,6 @@ function performAdvancedSearch() {
     advancedSearchModal.perform();
 }
 
-// Инициализация приложения
 window.onload = () => {
     instantListInstance = new InstantList(
         document.getElementById('instantlist_search'),
