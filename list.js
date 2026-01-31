@@ -637,6 +637,7 @@ class InstantList {
     applySettings() {
         this.settingsManager.updateFromDOM();
         this.settingsManager.saveToCookies();
+        this.settingsManager.applyTheme();
 
         this.config.itemsPerPage = this.settingsManager.generalSettings.itemsPerPage;
         this.table.updateItemsPerPage(this.config.itemsPerPage);
