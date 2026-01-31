@@ -203,7 +203,8 @@ class SettingsManager {
     getDefaultGeneralSettings() {
         return {
             itemsPerPage: 25,
-            showOnlyStoreItems: false
+            showOnlyStoreItems: false,
+            theme: 'system'
         };
     }
 
@@ -227,7 +228,18 @@ class SettingsManager {
             }
         }
 
+        this.applyTheme();
+        this.setupThemeListener();
+
         return this;
+    }
+
+    setupThemeListener() {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (this.generalSettings.theme === 'system') {
+                this.applyTheme();
+            }
+        });
     }
 
     saveToCookies() {
@@ -253,9 +265,11 @@ class SettingsManager {
             colMagicTickets: document.getElementById('colMagicTickets').checked
         };
 
+        const themeSelect = document.getElementById('themeSelect');
         this.generalSettings = {
             itemsPerPage: parseInt(document.getElementById('itemsPerPageSelect').value),
-            showOnlyStoreItems: document.getElementById('showOnlyStoreItems').checked
+            showOnlyStoreItems: document.getElementById('showOnlyStoreItems').checked,
+            theme: themeSelect ? themeSelect.value : 'system'
         };
     }
 
@@ -284,6 +298,30 @@ class SettingsManager {
 
         if (showOnlyStoreItemsEl) {
             showOnlyStoreItemsEl.checked = this.generalSettings.showOnlyStoreItems === true;
+        }
+
+        const themeSelect = document.getElementById('themeSelect');
+        if (themeSelect && this.generalSettings.theme) {
+            themeSelect.value = this.generalSettings.theme;
+        }
+
+        this.applyTheme();
+    }
+
+    applyTheme() {
+        const theme = this.generalSettings.theme || 'system';
+        let effectiveTheme;
+
+        if (theme === 'system') {
+            effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } else {
+            effectiveTheme = theme;
+        }
+
+        if (effectiveTheme === 'dark') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-bs-theme');
         }
     }
 }

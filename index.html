@@ -18,9 +18,9 @@
         config['fsPath'] = 'fs';
     </script>
     <link href="./bootstrap.min.css" rel="stylesheet" type="text/css" />
-    <script src="./items.min.js"></script> <!--- Loading items -->
-    <script src="./resources.min.js"></script> <!--- Loading resources -->
-    <script src="./list.js"></script> <!--- Loading main -->
+    <script src="./items.min.js"></script>
+    <script src="./resources.min.js"></script>
+    <script src="./list.js"></script>
 
     <!-- Tagify CSS & JS -->
     <link href="./tagify.css" rel="stylesheet" type="text/css" />
@@ -112,6 +112,14 @@
                                         Показывать только вещи из магазина
                                     </label>
                                 </div>
+                            </div>
+                            <div class="col mt-3">
+                                <label for="themeSelect" class="form-label">Тема оформления:</label>
+                                <select class="form-select" id="themeSelect">
+                                    <option value="system" selected>Системная</option>
+                                    <option value="light">Светлая</option>
+                                    <option value="dark">Тёмная</option>
+                                </select>
                             </div>
                         </div>
                     </div>
