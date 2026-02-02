@@ -4,6 +4,20 @@
             2026
 */
 
+const INSTANTLIST_LAST_UPDATE = '202602021530';
+
+function formatLastUpdateDate(dateString) {
+    if (!dateString || dateString.length !== 12) {
+        return null;
+    }
+    const year = dateString.substring(0, 4);
+    const month = dateString.substring(4, 6);
+    const day = dateString.substring(6, 8);
+    const hour = dateString.substring(8, 10);
+    const minute = dateString.substring(10, 12);
+    return `${day}.${month}.${year} в ${hour}:${minute}`;
+}
+
 const goodTypeMap = {
     1: 'Одежда',
     4: 'Шапки/Причёски',
@@ -828,6 +842,13 @@ class SettingsModal {
     }
 
     open() {
+        const lastUpdateEl = document.getElementById('lastUpdateInfo');
+        if (lastUpdateEl && typeof INSTANTLIST_LAST_UPDATE !== 'undefined') {
+            const formattedDate = formatLastUpdateDate(INSTANTLIST_LAST_UPDATE);
+            if (formattedDate) {
+                lastUpdateEl.textContent = `Последнее обновление: ${formattedDate}`;
+            }
+        }
         const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
         modal.show();
     }
