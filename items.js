@@ -17970,6 +17970,7 @@ g[21430] = {Id:21430,MRId:48082,TRId:47438,GoodTypeId:71,RoleFlags:0,UsualTicket
 g[21431] = {Id:21431,MRId:48085,TRId:47439,GoodTypeId:22,RoleFlags:0,UsualTickets:-1,MagicTickets:-1,DefCurrency:0,LevelThreshold:0,UnlockCost:0,SortOrder:0,PublishDate:"2026-02-02T21:06:43.960",Tags:"",LayerId:0,IsActive:1};
 g[21432] = {Id:21432,MRId:48086,TRId:47440,GoodTypeId:4,RoleFlags:0,UsualTickets:-1,MagicTickets:-1,DefCurrency:0,LevelThreshold:0,UnlockCost:0,SortOrder:0,PublishDate:"2026-02-02T21:09:55.613",Tags:"",LayerId:45,IsActive:1};
 g[21433] = {Id:21433,MRId:48087,TRId:47441,GoodTypeId:1,RoleFlags:0,UsualTickets:-1,MagicTickets:-1,DefCurrency:0,LevelThreshold:0,UnlockCost:0,SortOrder:0,PublishDate:"2026-02-02T21:10:45.133",Tags:"",LayerId:36,IsActive:1};
+g[21434] = {Id:21434,MRId:48088,TRId:47442,GoodTypeId:36,RoleFlags:0,UsualTickets:-1,MagicTickets:-1,DefCurrency:0,LevelThreshold:0,UnlockCost:0,SortOrder:0,PublishDate:"2026-02-03T15:32:19.997",Tags:"",LayerId:56,IsActive:1};
 var gm = {};
 gm[2779] = {MAId:19};
 gm[2815] = {MAId:20};
