@@ -17,6 +17,24 @@
         config['domain'] = "https://shararam.ru";
         config['fsPath'] = 'fs';
     </script>
+
+    <!-- Применяем тему до загрузки стилей, чтобы страница не мигала белым -->
+    <script>
+        (function () {
+            try {
+                var theme = 'system';
+                var match = document.cookie.match(/(?:^|; )generalSettings=([^;]*)/);
+                if (match) {
+                    var settings = JSON.parse(decodeURIComponent(match[1]));
+                    if (settings && settings.theme) theme = settings.theme;
+                }
+                var isDark = theme === 'dark' ||
+                    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (isDark) document.documentElement.setAttribute('data-bs-theme', 'dark');
+            } catch (e) {}
+        })();
+    </script>
+
     <link href="./bootstrap.min.css" rel="stylesheet" type="text/css" />
     <script src="./items.js"></script>
     <script src="./resources.js"></script>
