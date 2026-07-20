@@ -327,6 +327,20 @@ class SettingsManager {
     }
 }
 
+// Единый источник правды по колонкам таблицы: заголовок, ячейка и видимость.
+// Колонки с key: null показываются всегда; остальные управляются columnSettings.
+const COLUMNS = [
+    { key: null, cls: null, title: 'ID', cell: (item) => item['Id'] },
+    { key: null, cls: null, title: 'Название', cell: (item) => item['Name'] },
+    { key: 'colType', cls: 'col-type', title: 'Тип', cell: (item) => item['Type'] },
+    { key: 'colPreview', cls: 'col-preview', title: 'Превью', cell: (item, r) => `<img style="width: 8.1rem" class="img-fluid" src="${r.domain}/${r.fsPath}/${item['PicUrl']}" alt=""/>` },
+    { key: 'colSwf', cls: 'col-swf', title: 'SWF файл', cell: (item, r) => `<a href="${r.domain}/${r.fsPath}/${item['SwfUrl']}" class="text-decoration-none" target="_blank">${item['SwfUrl']}</a>` },
+    { key: 'colPublishDate', cls: 'col-publish-date', title: 'Дата добавления', cell: (item) => item['PublishDate'] },
+    { key: 'colTags', cls: 'col-tags', title: 'Теги', cell: (item, r) => r.renderTags(item) },
+    { key: 'colUsualTickets', cls: 'col-usual-tickets', title: 'Смешинки', cell: (item) => item['UsualTickets'] >= 0 ? item['UsualTickets'] : '—' },
+    { key: 'colMagicTickets', cls: 'col-magic-tickets', title: 'Румбики', cell: (item) => item['MagicTickets'] >= 0 ? item['MagicTickets'] : '—' },
+];
+
 class ItemRenderer {
     constructor(domain, fsPath, columnSettings) {
         this.domain = domain;
@@ -338,52 +352,24 @@ class ItemRenderer {
         return tagsString.split(',').map(tag => tag.trim());
     }
 
+    renderTags(item) {
+        if (!item['Tags']) {
+            return '—';
+        }
+        return this.parseTags(item['Tags']).map(tagId => {
+            const tagName = tagsMap[tagId.trim()] || tagId.trim();
+            return `<span class="badge bg-secondary me-1 mb-1">${tagName}</span>`;
+        }).join('');
+    }
+
     render(item) {
         let html = '<tr>';
-        html += `<td>${item['Id']}</td>`;
-        html += `<td>${item['Name']}</td>`;
-
-        if (this.columnSettings.colType) {
-            html += `<td class="col-type">${item['Type']}</td>`;
+        for (const col of COLUMNS) {
+            if (col.key && !this.columnSettings[col.key]) continue;
+            const clsAttr = col.cls ? ` class="${col.cls}"` : '';
+            html += `<td${clsAttr}>${col.cell(item, this)}</td>`;
         }
-
-        if (this.columnSettings.colPreview) {
-            html += `<td class="col-preview"><img style="width: 8.1rem" class="img-fluid" src="${this.domain}/${this.fsPath}/${item['PicUrl']}" alt=""/></td>`;
-        }
-
-        if (this.columnSettings.colSwf) {
-            html += `<td class="col-swf"><a href="${this.domain}/${this.fsPath}/${item['SwfUrl']}" class="text-decoration-none" target="_blank">${item['SwfUrl']}</a></td>`;
-        }
-
-        if (this.columnSettings.colPublishDate) {
-            html += `<td class="col-publish-date">${item['PublishDate']}</td>`;
-        }
-
-        if (this.columnSettings.colTags) {
-            let tagsHtml = '';
-
-            if (item['Tags']) {
-                const tags = this.parseTags(item['Tags']);
-                tagsHtml = tags.map(tagId => {
-                    const tagName = tagsMap[tagId.trim()] || tagId.trim();
-                    return `<span class="badge bg-secondary me-1 mb-1">${tagName}</span>`;
-                }).join('');
-            } else {
-                tagsHtml = '—';
-            }
-
-            html += `<td class="col-tags">${tagsHtml}</td>`;
-        }
-
-        if (this.columnSettings.colUsualTickets) {
-            html += `<td class="col-usual-tickets">${item['UsualTickets'] >= 0 ? item['UsualTickets'] : '—'}</td>`;
-        }
-
-        if (this.columnSettings.colMagicTickets) {
-            html += `<td class="col-magic-tickets">${item['MagicTickets'] >= 0 ? item['MagicTickets'] : '—'}</td>`;
-        }
-
-        html += `</tr>`;
+        html += '</tr>';
         return html;
     }
 }
@@ -392,19 +378,36 @@ class SearchEngine {
     highlightText(text, query) {
         const normalizedText = StringNormalizer.normalizeKeepQuotes(text);
         const normalizedQuery = StringNormalizer.normalize(query);
-        let result = '';
-        let queryWords = normalizedQuery.split(' ');
+        const words = normalizedQuery.split(' ').filter(word => word.length > 0);
 
-        for (let letterIndex = 0; letterIndex < text.length; letterIndex++) {
-            for (let word of queryWords) {
-                if (letterIndex === normalizedText.lastIndexOf(word)) {
-                    result += '<mark>';
+        // Подсветка работает по позициям, поэтому нужна посимвольная
+        // соответствие нормализованного и исходного текста. Если trim сдвинул
+        // длину — возвращаем текст как есть, без разметки.
+        if (words.length === 0 || normalizedText.length !== text.length) {
+            return text;
+        }
+
+        // Отмечаем все вхождения каждого слова; пересечения сливаются в один <mark>.
+        const marked = new Array(text.length).fill(false);
+        for (const word of words) {
+            let from = normalizedText.indexOf(word);
+            while (from !== -1) {
+                for (let i = from; i < from + word.length; i++) {
+                    marked[i] = true;
                 }
-                if (letterIndex === (normalizedText.lastIndexOf(word) + word.length)) {
-                    result += '</mark>';
-                }
+                from = normalizedText.indexOf(word, from + 1);
             }
-            result += text[letterIndex];
+        }
+
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+            if (marked[i] && (i === 0 || !marked[i - 1])) {
+                result += '<mark>';
+            }
+            result += text[i];
+            if (marked[i] && (i === text.length - 1 || !marked[i + 1])) {
+                result += '</mark>';
+            }
         }
 
         return result;
@@ -711,15 +714,11 @@ class Table {
     getTableHead() {
         const settings = this.settingsManager.columnSettings;
         let head = '<thead><tr>';
-        head += '<th>ID</th>';
-        head += '<th>Название</th>';
-        if (settings.colType) head += '<th class="col-type">Тип</th>';
-        if (settings.colPreview) head += '<th class="col-preview">Превью</th>';
-        if (settings.colSwf) head += '<th class="col-swf">SWF файл</th>';
-        if (settings.colPublishDate) head += '<th class="col-publish-date">Дата добавления</th>';
-        if (settings.colTags) head += '<th class="col-tags">Теги</th>';
-        if (settings.colUsualTickets) head += '<th class="col-usual-tickets">Смешинки</th>';
-        if (settings.colMagicTickets) head += '<th class="col-magic-tickets">Румбики</th>';
+        for (const col of COLUMNS) {
+            if (col.key && !settings[col.key]) continue;
+            const clsAttr = col.cls ? ` class="${col.cls}"` : '';
+            head += `<th${clsAttr}>${col.title}</th>`;
+        }
         head += '</tr></thead>';
         return head;
     }
@@ -730,13 +729,11 @@ class Table {
         style.id = 'columnStyles';
 
         let css = '';
-        if (!settings.colType) css += '.col-type { display: none !important; } ';
-        if (!settings.colPreview) css += '.col-preview { display: none !important; } ';
-        if (!settings.colSwf) css += '.col-swf { display: none !important; } ';
-        if (!settings.colPublishDate) css += '.col-publish-date { display: none !important; } ';
-        if (!settings.colTags) css += '.col-tags { display: none !important; } ';
-        if (!settings.colUsualTickets) css += '.col-usual-tickets { display: none !important; } ';
-        if (!settings.colMagicTickets) css += '.col-magic-tickets { display: none !important; } ';
+        for (const col of COLUMNS) {
+            if (col.key && col.cls && !settings[col.key]) {
+                css += `.${col.cls} { display: none !important; } `;
+            }
+        }
 
         style.textContent = css;
         document.head.appendChild(style);
@@ -746,7 +743,7 @@ class Table {
         let paginationHTML = '<nav aria-label="..."><ul class="pagination pagination-sm flex-wrap">';
         for (let i = 1; i <= pagesCount; i++) {
             if (i === currentPage) {
-                paginationHTML += `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span><li>`;
+                paginationHTML += `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span></li>`;
             } else {
                 paginationHTML += `<li class="page-item"><a class="page-link" href="#${i}">${i}</a></li> `;
             }
@@ -755,43 +752,29 @@ class Table {
         return paginationHTML;
     }
 
-    renderTable(items, page, from, to) {
+    buildTableHtml(items) {
         this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
         let html = '<table class="table table-striped table-borderless">';
         html += this.getTableHead();
         html += '<tbody>';
-
-        for (let i = from - 1; i < to; i++) {
-            const item = items[i];
-            if (item !== undefined) {
-                html += this.itemRenderer.render(item);
-            }
+        for (const item of items) {
+            html += this.itemRenderer.render(item);
         }
-
         html += '</tbody></table>';
+        return html;
+    }
 
-        this.holder.innerHTML = html;
+    renderTable(items, page, from, to) {
+        this.holder.innerHTML = this.buildTableHtml(items.slice(from - 1, to));
         this.applyColumnVisibility();
         this.pageHolder.innerHTML = this.renderPagination(Math.ceil(items.length / this.config.itemsPerPage), page);
     }
 
     renderSearchResults(results) {
-        this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
-
-        let html = '<table class="table table-striped table-borderless">';
-        html += this.getTableHead();
-        html += '<tbody>';
-
-        for (let item of results) {
-            html += this.itemRenderer.render(item);
-        }
-
-        html += '</tbody></table>';
-
-        if (results.length === 0) {
-            html = '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>';
-        }
+        const html = results.length === 0
+            ? '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>'
+            : this.buildTableHtml(results);
 
         this.pageHolder.innerHTML = '';
         this.setTitle("Результаты поиска");
@@ -800,23 +783,14 @@ class Table {
     }
 
     renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo) {
-        this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
-
-        let html = '<table class="table table-striped table-borderless">';
-        html += this.getTableHead();
-        html += '<tbody>';
-
-        for (let item of results) {
-            html += this.itemRenderer.render(item);
-        }
-
-        html += '</tbody></table>';
-
+        let html;
         if (results.length === 0) {
             html = '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>';
             if (selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo) {
                 html += '<p class="text-muted">Попробуйте изменить критерии поиска или убрать некоторые фильтры.</p>';
             }
+        } else {
+            html = this.buildTableHtml(results);
         }
 
         this.pageHolder.innerHTML = '';
