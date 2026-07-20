@@ -190,11 +190,16 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-danger me-auto" onclick="resetSettings()">По
-                        умолчанию</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" onclick="applyColumnSettings()">Применить</button>
+                <div class="modal-footer flex-column align-items-stretch">
+                    <div class="text-muted small text-center mb-2" id="lastUpdateInfo"></div>
+                    <div class="d-flex justify-content-between w-100">
+                        <button type="button" class="btn btn-outline-danger" onclick="resetSettings()">По
+                            умолчанию</button>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-primary" onclick="applyColumnSettings()">Применить</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
