@@ -4,7 +4,7 @@
             2026
 */
 
-const INSTANTLIST_LAST_UPDATE = '202607211412';
+const INSTANTLIST_LAST_UPDATE = '202607281422';
 
 function formatLastUpdateDate(dateString) {
     if (!dateString || dateString.length !== 12) {
