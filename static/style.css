@@ -283,3 +283,18 @@ html[data-bs-theme="dark"] .tagify__dropdown__item--active {
     /* Readonly */
     --readonly-striped: 1;
 }
+
+/* Страница отдельной вещи */
+.item-preview {
+    max-width: 14rem;
+}
+
+.item-details th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.related-preview {
+    max-width: 4rem;
+    max-height: 4rem;
+}
