@@ -1,300 +1,875 @@
 /*
     InstantList JS - Styles
         by Jjck
-            2025
+            2026
+
+    Поверх sashimi UI (static/sashimi.css). Здесь три слоя:
+      1. Токены темы — sashimi переключает тёмную тему только по
+         prefers-color-scheme, а нам нужен ещё и ручной выбор из настроек,
+         поэтому фирменную тему пишем сами и вешаем на <html data-theme>.
+      2. Компоненты, которых в sashimi нет: шапка, пагинация, тосты.
+      3. Мелочи страниц списка и вещи.
 */
+
+/* ------------------------------------------------------------------ */
+/* 1. Тема                                                             */
+/* ------------------------------------------------------------------ */
+
+:root {
+    --sui-color-neutral-primary: #1c2024;
+    --sui-color-neutral-secondary: #6b757e;
+
+    --sui-color-neutral-tertiary: #dde2e7;
+    --sui-color-on-neutral-tertiary: #5c666f;
+
+    --sui-color-key-primary: #2b5fd9;
+    --sui-color-on-key-primary: #ffffff;
+    --sui-color-key-secondary: #5b86e5;
+    --sui-color-key-tertiary: #dfe8fc;
+
+    --sui-color-outline-primary: #c7ced5;
+    --sui-color-outline-secondary: #e5e9ed;
+
+    --sui-color-highlight-primary: #e3e7ec;
+    --sui-color-highlight-secondary: #f4f6f8;
+
+    --sui-color-surface: #ffffff;
+    --sui-color-disabled-fill: #f1f3f6;
+
+    --sui-color-success: #1a8f4c;
+    --sui-color-warning: #b57700;
+    --sui-color-error: #dc3b53;
+
+    --sui-color-scrim: rgba(28, 32, 36, 0.5);
+
+    --sui-roundness-strong: 7px;
+    --sui-roundness-normal: 6px;
+
+    --sui-base-padding: 12px;
+    --sui-input-base-height: 38px;
+    --sui-button-height: 38px;
+    --sui-button-font-weight: 500;
+    --sui-button-horizontal-padding: 14px;
+    --sui-shadow-hover: 0 4px 24px rgba(28, 44, 66, 0.14);
+
+    --sui-checkbox-size: 18px;
+    --sui-radio-size: 18px;
+    --sui-label-gap: 8px;
+    --sui-icon-gap: 0.4em;
+    --sui-regular-ripple-effect-density: 0.2;
+    --sui-broad-ripple-effect-density: 0.5;
+    --sui-button-ripple-effect-content: "";
+
+    /* Собственные токены страницы */
+    --il-page-bg: #f7f8fa;
+    --il-topbar-height: 56px;
+    --il-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+        Arial, sans-serif;
+    --il-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        "Liberation Mono", monospace;
+}
+
+/* Тёмная тема: системная (если пользователь не выбрал светлую явно) */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+
+        --sui-color-neutral-primary: #e2e6ea;
+        --sui-color-neutral-secondary: #8b949d;
+
+        --sui-color-neutral-tertiary: #3a4148;
+        --sui-color-on-neutral-tertiary: #d3d9df;
+
+        --sui-color-key-primary: #6f9dff;
+        --sui-color-on-key-primary: #0b1220;
+        --sui-color-key-secondary: #5b86e5;
+        --sui-color-key-tertiary: #22304a;
+
+        --sui-color-outline-primary: #3d454d;
+        --sui-color-outline-secondary: #2b3238;
+
+        --sui-color-highlight-primary: #262d34;
+        --sui-color-highlight-secondary: #1e242a;
+
+        --sui-color-surface: #161b20;
+        --sui-color-disabled-fill: #22282e;
+
+        --sui-color-success: #46c07a;
+        --sui-color-warning: #e0a63a;
+        --sui-color-error: #ff6b7f;
+
+        --sui-color-scrim: rgba(0, 0, 0, 0.6);
+        --sui-shadow-hover: 0 4px 24px rgba(0, 0, 0, 0.45);
+
+        --il-page-bg: #101418;
+    }
+}
+
+/* Тёмная тема: выбрана вручную */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --sui-color-neutral-primary: #e2e6ea;
+    --sui-color-neutral-secondary: #8b949d;
+
+    --sui-color-neutral-tertiary: #3a4148;
+    --sui-color-on-neutral-tertiary: #d3d9df;
+
+    --sui-color-key-primary: #6f9dff;
+    --sui-color-on-key-primary: #0b1220;
+    --sui-color-key-secondary: #5b86e5;
+    --sui-color-key-tertiary: #22304a;
+
+    --sui-color-outline-primary: #3d454d;
+    --sui-color-outline-secondary: #2b3238;
+
+    --sui-color-highlight-primary: #262d34;
+    --sui-color-highlight-secondary: #1e242a;
+
+    --sui-color-surface: #161b20;
+    --sui-color-disabled-fill: #22282e;
+
+    --sui-color-success: #46c07a;
+    --sui-color-warning: #e0a63a;
+    --sui-color-error: #ff6b7f;
+
+    --sui-color-scrim: rgba(0, 0, 0, 0.6);
+    --sui-shadow-hover: 0 4px 24px rgba(0, 0, 0, 0.45);
+
+    --il-page-bg: #101418;
+}
+
+/* ------------------------------------------------------------------ */
+/* 2. База                                                             */
+/* ------------------------------------------------------------------ */
 
 html {
     scroll-behavior: auto !important;
 }
 
-/* Dark mode styles */
-html[data-bs-theme="dark"] {
-    color-scheme: dark;
+body {
+    /* baseline sashimi задаёт свои отступы — страница управляет ими сама */
+    padding: 0;
+    margin: 0;
+    background-color: var(--il-page-bg);
+    font-family: var(--il-font);
+    -webkit-text-size-adjust: 100%;
 }
 
-html[data-bs-theme="dark"] body {
-    background-color: #212529;
-    color: #dee2e6;
+h1,
+h2,
+h3 {
+    letter-spacing: -0.015em;
 }
 
-html[data-bs-theme="dark"] .navbar.bg-primary {
-    background-color: #1a3a5c !important;
+code {
+    font-family: var(--il-font-mono);
+    font-size: 0.9em;
+    word-break: break-all;
 }
 
-html[data-bs-theme="dark"] .table {
-    --bs-table-bg: #212529;
-    --bs-table-striped-bg: #2c3034;
-    --bs-table-hover-bg: #323539;
-    color: #dee2e6;
+.muted {
+    color: var(--sui-color-neutral-secondary);
 }
 
-html[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
-    background-color: var(--bs-table-striped-bg);
+.small {
+    font-size: 0.85em;
 }
 
-html[data-bs-theme="dark"] .modal-content {
-    background-color: #2b3035;
-    color: #dee2e6;
-    border-color: #495057;
+.mono {
+    font-family: var(--il-font-mono);
+    font-variant-numeric: tabular-nums;
 }
 
-html[data-bs-theme="dark"] .modal-header {
-    border-bottom-color: #495057;
+.nowrap {
+    white-space: nowrap;
 }
 
-html[data-bs-theme="dark"] .modal-footer {
-    border-top-color: #495057;
+.break {
+    word-break: break-word;
 }
 
-html[data-bs-theme="dark"] .btn-close {
-    filter: invert(1) grayscale(100%) brightness(200%);
+.page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 20px 96px;
 }
 
-html[data-bs-theme="dark"] .form-control,
-html[data-bs-theme="dark"] .form-select {
-    background-color: #343a40;
-    border-color: #495057;
-    color: #dee2e6;
+.page-narrow {
+    max-width: 1080px;
 }
 
-html[data-bs-theme="dark"] .form-control:focus,
-html[data-bs-theme="dark"] .form-select:focus {
-    background-color: #343a40;
-    border-color: #86b7fe;
-    color: #dee2e6;
+.page-title {
+    font-size: 1.6rem;
+    font-weight: 650;
+    line-height: 1.25;
+    margin: 4px 0 20px;
 }
 
-html[data-bs-theme="dark"] .form-control::placeholder {
-    color: #6c757d;
+.section-title {
+    font-size: 1.15rem;
+    font-weight: 650;
+    margin: 0;
 }
 
-html[data-bs-theme="dark"] .input-group-text {
-    background-color: #343a40;
-    border-color: #495057;
-    color: #dee2e6;
+.section {
+    margin-top: 44px;
 }
 
-html[data-bs-theme="dark"] .input-group-text.bg-white {
-    background-color: #343a40 !important;
+.section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
-html[data-bs-theme="dark"] .text-muted {
-    color: #adb5bd !important;
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-html[data-bs-theme="dark"] .alert-info {
-    background-color: #1a3a5c;
-    border-color: #2c5282;
-    color: #90cdf4;
+.hidden {
+    display: none !important;
 }
 
-html[data-bs-theme="dark"] .page-link {
-    background-color: #343a40;
-    border-color: #495057;
-    color: #dee2e6;
+/* Пустой результат поиска: обычный текст по левому краю страницы. Подложка
+   callout здесь только сбивала выравнивание с заголовком. */
+.empty {
+    margin: 4px 0;
 }
 
-html[data-bs-theme="dark"] .page-item.active .page-link {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+.empty p {
+    margin: 0 0 6px;
 }
 
-html[data-bs-theme="dark"] .page-item:not(.active) .page-link:hover {
-    background-color: #495057 !important;
-    color: #fff;
+.empty p:last-child {
+    margin-bottom: 0;
 }
 
-html[data-bs-theme="dark"] .badge.bg-secondary {
-    background-color: #495057 !important;
+/* ------------------------------------------------------------------ */
+/* 3. Шапка                                                            */
+/* ------------------------------------------------------------------ */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--sui-color-surface);
+    border-bottom: 1px solid var(--sui-color-outline-secondary);
 }
 
-html[data-bs-theme="dark"] a {
-    color: #6ea8fe;
+.topbar-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: var(--il-topbar-height);
+    padding: 8px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
 }
 
-html[data-bs-theme="dark"] a:hover {
-    color: #9ec5fe;
+.brand {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--sui-color-neutral-primary);
+    text-decoration: none;
+    white-space: nowrap;
 }
 
-html[data-bs-theme="dark"] .modal-body::-webkit-scrollbar-track {
-    background: #343a40;
+.brand:hover {
+    color: var(--sui-color-key-primary);
 }
 
-html[data-bs-theme="dark"] .modal-body::-webkit-scrollbar-thumb {
-    background: #6c757d;
+.topbar-search {
+    position: relative;
+    flex: 1 1 220px;
+    min-width: 180px;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-html[data-bs-theme="dark"] .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #adb5bd;
+.topbar-search .search-field {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
 }
 
-html[data-bs-theme="dark"] .form-check-input {
-    background-color: #343a40;
-    border-color: #495057;
+.topbar-search .search-field .icon {
+    position: absolute;
+    left: 10px;
+    color: var(--sui-color-neutral-secondary);
+    pointer-events: none;
 }
 
-html[data-bs-theme="dark"] .form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+.topbar-search input {
+    width: 100%;
+    padding-left: 34px;
+    background-color: var(--sui-color-highlight-secondary);
 }
 
-/* Стили подсветки найденного текста */
-.mark,
-mark {
-    padding: 0 !important;
-    background-color: #6c757d2e !important;
+.topbar-search input:focus {
+    background-color: var(--sui-color-surface);
 }
 
-/* Стили пагинации */
-.page-link {
-    transition: none !important;
+.topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
 }
 
-.page-item:not(.active) .page-link:hover {
-    background-color: #e9ecef !important;
+/* Кнопка-иконка: квадратная, без заливки, для действий в шапке */
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sui-icon-gap);
+    height: var(--sui-input-base-height);
+    min-width: var(--sui-input-base-height);
+    padding: 0 10px;
+    box-sizing: border-box;
+    border: none;
+    border-radius: var(--sui-roundness-normal);
+    background: transparent;
+    color: var(--sui-color-neutral-secondary);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-/* Стили модального окна */
-.modal-body {
-    max-height: 60vh;
-    overflow-y: auto;
+.icon-button:hover {
+    background-color: var(--sui-color-highlight-secondary);
+    color: var(--sui-color-neutral-primary);
 }
 
-/* Принудительное отображение скроллбара */
-.modal-body::-webkit-scrollbar {
-    width: 8px;
+.icon-button:active {
+    background-color: var(--sui-color-highlight-primary);
 }
 
-.modal-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+/* ------------------------------------------------------------------ */
+/* 4. Таблицы                                                          */
+/* ------------------------------------------------------------------ */
+
+.table-wrap {
+    background-color: var(--sui-color-surface);
+    border: 1px solid var(--sui-color-outline-secondary);
+    border-radius: 10px;
+    overflow-x: auto;
 }
 
-.modal-body::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+.table {
+    width: 100%;
 }
 
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background: #555;
+.table th {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.form-check-input:disabled {
-    opacity: 0.5;
+.table thead th {
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
-.form-check-label {
-    user-select: none;
+.table tbody tr + tr > * {
+    border-top: 1px solid var(--sui-color-outline-secondary);
 }
 
-/* Стили таблицы */
-.table td {
-    vertical-align: middle;
+.table tbody tr:hover {
+    background-color: var(--sui-color-highlight-secondary);
+}
+
+/* В плотной таблице подчёркивание у каждой ссылки шумит — оставляем его
+   только на наведении. */
+.table .link {
+    text-decoration: none;
+}
+
+.table .link:hover {
+    text-decoration: underline;
+}
+
+/* Таблица «ключ — значение» на странице вещи */
+.table-kv th {
+    width: 220px;
+    font-size: 0.85rem;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--sui-color-neutral-secondary);
+    vertical-align: top;
+    padding-top: 11px;
+}
+
+.col-id {
+    font-family: var(--il-font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--sui-color-neutral-secondary);
+}
+
+.col-name a {
+    font-weight: 500;
+}
+
+.col-swf {
+    font-family: var(--il-font-mono);
+    font-size: 0.85em;
+    max-width: 260px;
+    word-break: break-all;
 }
 
 .col-tags {
-    max-width: 150px;
-    word-wrap: break-word;
+    max-width: 190px;
 }
 
 .col-publish-date {
-    min-width: 120px;
+    min-width: 116px;
+    white-space: nowrap;
+    color: var(--sui-color-neutral-secondary);
+    font-variant-numeric: tabular-nums;
 }
 
+.table th.col-usual-tickets,
+.table th.col-magic-tickets,
 .col-usual-tickets,
 .col-magic-tickets {
-    text-align: center;
+    text-align: right;
     min-width: 80px;
+    font-variant-numeric: tabular-nums;
 }
 
-/* Стили для Tagify */
-:root {
-    --tagify-dd-color-primary: #0d6efd;
-    --tagify-dd-bg-color: #fff;
+.col-preview img {
+    display: block;
+    width: 8.1rem;
+    max-height: 5.5rem;
+    object-fit: contain;
+    object-position: center;
 }
 
-html[data-bs-theme="dark"] {
-    --tagify-dd-bg-color: #343a40;
+/* Набор тегов в ячейке */
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
-html[data-bs-theme="dark"] .form-control#tags,
-html[data-bs-theme="dark"] #tags {
-    --tags-border-color: #495057;
-    --tags-hover-border-color: #86b7fe;
-    --tags-focus-border-color: #86b7fe;
-    --tags-disabled-bg: #495057;
-    --input-color: #dee2e6;
-    --placeholder-color: #6c757d;
-    --placeholder-color-focus: #adb5bd;
-    --tag-text-color--edit: #dee2e6;
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    white-space: nowrap;
+    color: var(--sui-color-on-neutral-tertiary);
+    background-color: var(--sui-color-neutral-tertiary);
 }
 
-html[data-bs-theme="dark"] .tagify__dropdown {
-    background-color: #343a40;
-    border-color: #495057;
+/* ------------------------------------------------------------------ */
+/* 5. Пагинация                                                        */
+/* ------------------------------------------------------------------ */
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
 }
 
-html[data-bs-theme="dark"] .tagify__dropdown__item {
-    color: #dee2e6;
+.pagination a,
+.pagination span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border-radius: var(--sui-roundness-normal);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+    color: var(--sui-color-neutral-primary);
 }
 
-html[data-bs-theme="dark"] .tagify__dropdown__item--active {
-    background-color: #0d6efd;
+.pagination a:hover {
+    background-color: var(--sui-color-highlight-primary);
 }
 
-.form-control, #tags {
-    /* Основные переменные Tagify */
-    --tags-border-color: #dee2e6;
-    --tags-hover-border-color: #86b7fe;
-    --tags-focus-border-color: #86b7fe;
-    --tags-disabled-bg: #e9ecef;
+.pagination .current {
+    background-color: var(--sui-color-key-primary);
+    color: var(--sui-color-on-key-primary);
+    font-weight: 600;
+}
 
-    /* Переменные для тегов */
-    --tag-bg: #0d6efd !important;
-    --tag-hover: #0b5ed7;
-    --tag-text-color: #fff;
-    --tag-text-color--edit: #212529;
-    --tag-pad: 0.35em 0.65em;
-    --tag-border-radius: 0.375rem;
+/* ------------------------------------------------------------------ */
+/* 6. Диалоги                                                          */
+/* ------------------------------------------------------------------ */
+
+.dialog {
+    width: min(560px, calc(100vw - 32px));
+    max-height: min(680px, calc(100vh - 48px));
+    padding: 0;
+    flex-direction: column;
+    border: 1px solid var(--sui-color-outline-secondary);
+    /* Выпадашка тегов живёт внутри диалога (см. appendTarget в list.js), а
+       sashimi обрезает содержимое по скруглению — иначе список обрежется. */
+    overflow: visible;
+}
+
+/* display у <dialog> задаёт браузер: none, пока нет атрибута [open]. Свой
+   display поэтому вешаем только на открытое окно, иначе закрытый диалог
+   остаётся в потоке страницы и висит внизу. */
+.dialog[open] {
+    display: flex;
+    animation: dialog-in 0.14s ease-out;
+}
+
+.dialog::backdrop {
+    background-color: var(--sui-color-scrim);
+}
+
+@keyframes dialog-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dialog[open] {
+        animation: none;
+    }
+}
+
+.dialog-wide {
+    width: min(760px, calc(100vw - 32px));
+}
+
+.dialog-narrow {
+    width: min(400px, calc(100vw - 32px));
+}
+
+.dialog-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--sui-color-outline-secondary);
+}
+
+.dialog-head h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+
+.dialog-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.dialog-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--sui-color-outline-secondary);
+}
+
+.dialog-foot .spacer {
+    margin-right: auto;
+}
+
+.dialog-body::-webkit-scrollbar {
+    width: 10px;
+}
+
+.dialog-body::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+    background-color: var(--sui-color-outline-primary);
+}
+
+/* Группы полей внутри диалогов */
+.field-group {
+    margin-bottom: 24px;
+}
+
+.field-group:last-child {
+    margin-bottom: 0;
+}
+
+.field-group > h3 {
+    margin: 0 0 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--sui-color-neutral-secondary);
+}
+
+.field {
+    margin-bottom: 12px;
+}
+
+/* Подпись над полем. Label с чекбоксом внутри исключаем: у него своя
+   раскладка от sashimi (inline flex + gap), и её тут перебивать нельзя. */
+.field > .label:not(:has(.checkbox)) {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.field .input,
+.field .select {
+    width: 100%;
+}
+
+.check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 8px 20px;
+}
+
+.check-grid .label {
+    user-select: none;
+    align-items: flex-start;
+}
+
+.checkbox:disabled + .label,
+.label:has(.checkbox:disabled) {
+    opacity: 0.55;
+}
+
+.field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.field-row > * {
+    flex: 1 1 160px;
+}
+
+/* В sashimi нет разрушающего варианта кнопки, а подтверждению сброса он
+   нужен. */
+.button.danger {
+    background: var(--sui-color-error);
+    color: #ffffff;
+}
+
+.button.danger::before {
+    background: #ffffff;
+}
+
+/* ------------------------------------------------------------------ */
+/* 7. Тосты                                                            */
+/* ------------------------------------------------------------------ */
+
+.toast-holder {
+    position: fixed;
+    top: calc(var(--il-topbar-height) + 16px);
+    right: 16px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast-holder .callout {
+    min-width: 260px;
+    padding: 12px 16px;
+    /* Тонированные фоны callout полупрозрачны, а тост висит над контентом —
+       поэтому даём ему непрозрачную подложку, а тип помечаем полоской слева. */
+    background-color: var(--sui-color-surface);
+    border: 1px solid var(--sui-color-outline-secondary);
+    border-left: 3px solid var(--sui-color-neutral-secondary);
+    box-shadow: var(--sui-shadow-hover);
+    animation: toast-in 0.16s ease-out;
+}
+
+.toast-holder .callout.success {
+    border-left-color: var(--sui-color-success);
+}
+
+.toast-holder .callout.warning {
+    border-left-color: var(--sui-color-warning);
+}
+
+.toast-holder .callout.destructive {
+    border-left-color: var(--sui-color-error);
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast-holder .callout {
+        animation: none;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* 8. Страница вещи                                                    */
+/* ------------------------------------------------------------------ */
+
+.item-layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.item-figure {
+    flex: 0 0 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    padding: 16px;
+    box-sizing: border-box;
+    background-color: var(--sui-color-surface);
+    border: 1px solid var(--sui-color-outline-secondary);
+    border-radius: 10px;
+}
+
+.item-figure img {
+    max-width: 100%;
+    height: auto;
+}
+
+.item-facts {
+    flex: 1 1 420px;
+    min-width: 0;
+}
+
+.related-preview {
+    max-width: 3.5rem;
+    max-height: 3.5rem;
+}
+
+@media (max-width: 640px) {
+    .item-figure {
+        flex-basis: 100%;
+    }
+
+    .table-kv th {
+        width: auto;
+        min-width: 130px;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* 9. Подсветка поиска и Tagify                                        */
+/* ------------------------------------------------------------------ */
+
+mark {
+    padding: 0 1px;
+    border-radius: 3px;
+    background: var(--sui-color-key-tertiary);
+    color: inherit;
+}
+
+.tagify {
+    --tags-border-color: var(--sui-color-outline-primary);
+    --tags-hover-border-color: var(--sui-color-key-secondary);
+    --tags-focus-border-color: var(--sui-color-key-primary);
+    --tags-disabled-bg: var(--sui-color-disabled-fill);
+
+    --tag-bg: var(--sui-color-key-tertiary);
+    --tag-hover: var(--sui-color-key-tertiary);
+    --tag-text-color: var(--sui-color-neutral-primary);
+    --tag-text-color--edit: var(--sui-color-neutral-primary);
+    --tag-pad: 0.2em 0.6em;
+    --tag-border-radius: 999px;
     --tag--min-width: 1ch;
     --tag--max-width: auto;
     --tag-inset-shadow-size: 1.35em;
 
-    /* Невалидные теги */
-    --tag-invalid-color: #dc3545;
-    --tag-invalid-bg: rgba(220, 53, 69, 0.1);
+    --tag-invalid-color: var(--sui-color-error);
+    --tag-invalid-bg: rgba(220, 59, 83, 0.12);
 
-    /* Кнопка удаления */
-    --tag-remove-bg: rgba(0, 0, 0, 0.3);
-    --tag-remove-btn-color: #fff;
+    --tag-remove-bg: transparent;
+    --tag-remove-btn-color: var(--sui-color-neutral-secondary);
     --tag-remove-btn-bg: none;
-    --tag-remove-btn-bg--hover: #c82333;
+    --tag-remove-btn-bg--hover: transparent;
 
-    /* Input и placeholder */
-    --input-color: #212529;
-    --placeholder-color: #6c757d;
-    --placeholder-color-focus: #adb5bd;
+    --input-color: var(--sui-color-neutral-primary);
+    --placeholder-color: var(--sui-color-neutral-secondary);
+    --placeholder-color-focus: var(--sui-color-neutral-secondary);
 
-    /* Анимация */
     --tag-hide-transition: 0.3s;
     --loader-size: 0.8em;
-
-    /* Readonly */
     --readonly-striped: 1;
+
+    /* этой переменной Tagify красит рамки выпадашки — синяя слишком громкая,
+       подсветку активного пункта задаём отдельным правилом ниже */
+    --tagify-dd-color-primary: var(--sui-color-outline-primary);
+    --tagify-dd-bg-color: var(--sui-color-surface);
+
+    /* Tagify переносит классы исходного input на свою обёртку <tags>, поэтому
+       фиксированную высоту от .input нужно снять — тегов бывает много. */
+    height: auto;
+    min-height: var(--sui-input-base-height);
+    border-radius: var(--sui-roundness-normal);
+    background-color: var(--sui-color-surface);
+    /* точка отсчёта для выпадашки */
+    position: relative;
 }
 
-/* Страница отдельной вещи */
-.item-preview {
-    max-width: 14rem;
+.tagify__dropdown {
+    --tagify-dd-bg-color: var(--sui-color-surface);
 }
 
-.item-details th {
-    font-weight: 600;
-    white-space: nowrap;
+/* Выпадашка живёт внутри обёртки поля (см. appendTarget в list.js), поэтому
+   позицию Tagify, посчитанную в координатах документа, полностью
+   переопределяем: прижимаем список под поле по всей его ширине. */
+#advancedSearchModal .tagify__dropdown {
+    border-top: none;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    transform: none;
 }
 
-.related-preview {
-    max-width: 4rem;
-    max-height: 4rem;
+.tagify__dropdown__wrapper {
+    border-color: var(--sui-color-outline-primary);
+    border-top-width: 1px;
+    border-radius: 0 0 var(--sui-roundness-normal) var(--sui-roundness-normal);
+    box-shadow: var(--sui-shadow-hover);
+}
+
+.tagify__dropdown__item {
+    color: var(--sui-color-neutral-primary);
+    border-radius: var(--sui-roundness-normal);
+}
+
+.tagify__dropdown__item--active {
+    background-color: var(--sui-color-key-primary);
+    color: var(--sui-color-on-key-primary);
 }

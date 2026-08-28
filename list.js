@@ -189,22 +189,62 @@ class SettingsManager {
             effectiveTheme = theme;
         }
 
-        if (effectiveTheme === 'dark') {
-            document.documentElement.setAttribute('data-bs-theme', 'dark');
-        } else {
-            document.documentElement.removeAttribute('data-bs-theme');
-        }
+        document.documentElement.setAttribute('data-theme', effectiveTheme);
     }
 }
+
+// sashimi UI не приносит с собой JS, поэтому модальные окна — нативный
+// <dialog>: showModal() сам даёт фокус-ловушку, ::backdrop и закрытие по Esc.
+const Dialogs = {
+    open(id) {
+        const dialog = document.getElementById(id);
+        if (dialog && !dialog.open) {
+            dialog.showModal();
+        }
+        return dialog;
+    },
+
+    close(id) {
+        const dialog = document.getElementById(id);
+        if (dialog && dialog.open) {
+            dialog.close();
+        }
+    },
+
+    // Клик по затемнению приходит на сам <dialog>, а не на его содержимое.
+    setup() {
+        for (const dialog of document.querySelectorAll('dialog.dialog')) {
+            dialog.addEventListener('click', (event) => {
+                if (event.target === dialog) {
+                    dialog.close();
+                }
+            });
+        }
+        for (const button of document.querySelectorAll('[data-close-dialog]')) {
+            button.addEventListener('click', () => button.closest('dialog').close());
+        }
+    }
+};
+
+const EMPTY_RESULT = `
+    <div class="empty">
+        <p><strong>К сожалению, мы ничего не нашли.</strong></p>
+    </div>`;
+
+const EMPTY_RESULT_FILTERED = `
+    <div class="empty">
+        <p><strong>К сожалению, мы ничего не нашли.</strong></p>
+        <p class="muted">Попробуйте изменить критерии поиска или убрать некоторые фильтры.</p>
+    </div>`;
 
 // Единый источник правды по колонкам таблицы: заголовок, ячейка и видимость.
 // Колонки с key: null показываются всегда; остальные управляются columnSettings.
 const COLUMNS = [
-    { key: null, cls: null, title: 'ID', cell: (item) => item['Id'] },
-    { key: null, cls: null, title: 'Название', cell: (item) => `<a href="./item.html?id=${item['RawId']}" class="text-decoration-none">${item['Name']}</a>` },
+    { key: null, cls: 'col-id', title: 'ID', cell: (item) => item['Id'] },
+    { key: null, cls: 'col-name', title: 'Название', cell: (item) => `<a href="./item.html?id=${item['RawId']}" class="link">${item['Name']}</a>` },
     { key: 'colType', cls: 'col-type', title: 'Тип', cell: (item) => item['Type'] },
-    { key: 'colPreview', cls: 'col-preview', title: 'Превью', cell: (item, r) => `<img style="width: 8.1rem" class="img-fluid" src="${r.domain}/${r.fsPath}/${item['PicUrl']}" alt=""/>` },
-    { key: 'colSwf', cls: 'col-swf', title: 'SWF файл', cell: (item, r) => `<a href="${r.domain}/${r.fsPath}/${item['SwfUrl']}" class="text-decoration-none" target="_blank">${item['SwfUrl']}</a>` },
+    { key: 'colPreview', cls: 'col-preview', title: 'Превью', cell: (item, r) => `<img src="${r.domain}/${r.fsPath}/${item['PicUrl']}" alt="" loading="lazy"/>` },
+    { key: 'colSwf', cls: 'col-swf', title: 'SWF файл', cell: (item, r) => `<a href="${r.domain}/${r.fsPath}/${item['SwfUrl']}" class="link passive" target="_blank">${item['SwfUrl']}</a>` },
     { key: 'colPublishDate', cls: 'col-publish-date', title: 'Дата добавления', cell: (item) => item['PublishDate'] },
     { key: 'colTags', cls: 'col-tags', title: 'Теги', cell: (item, r) => r.renderTags(item) },
     { key: 'colUsualTickets', cls: 'col-usual-tickets', title: 'Смешинки', cell: (item) => item['UsualTickets'] >= 0 ? item['UsualTickets'] : '—' },
@@ -226,10 +266,11 @@ class ItemRenderer {
         if (!item['Tags']) {
             return '—';
         }
-        return this.parseTags(item['Tags']).map(tagId => {
+        const tags = this.parseTags(item['Tags']).map(tagId => {
             const tagName = tagsMap[tagId.trim()] || tagId.trim();
-            return `<span class="badge bg-secondary me-1 mb-1">${tagName}</span>`;
+            return `<span class="tag">${tagName}</span>`;
         }).join('');
+        return `<span class="tags">${tags}</span>`;
     }
 
     render(item) {
@@ -613,12 +654,15 @@ class Table {
     }
 
     renderPagination(pagesCount, currentPage) {
-        let paginationHTML = '<nav aria-label="..."><ul class="pagination pagination-sm flex-wrap">';
+        if (pagesCount <= 1) {
+            return '';
+        }
+        let paginationHTML = '<nav aria-label="Страницы"><ul class="pagination">';
         for (let i = 1; i <= pagesCount; i++) {
             if (i === currentPage) {
-                paginationHTML += `<li class="page-item active" aria-current="page"><span class="page-link">${i}</span></li>`;
+                paginationHTML += `<li><span class="current" aria-current="page">${i}</span></li>`;
             } else {
-                paginationHTML += `<li class="page-item"><a class="page-link" href="#${i}">${i}</a></li> `;
+                paginationHTML += `<li><a href="#${i}">${i}</a></li>`;
             }
         }
         paginationHTML += '</ul></nav>';
@@ -628,13 +672,13 @@ class Table {
     buildTableHtml(items) {
         this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
-        let html = '<table class="table table-striped table-borderless">';
+        let html = '<div class="table-wrap"><table class="table">';
         html += this.getTableHead();
         html += '<tbody>';
         for (const item of items) {
             html += this.itemRenderer.render(item);
         }
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         return html;
     }
 
@@ -646,7 +690,7 @@ class Table {
 
     renderSearchResults(results) {
         const html = results.length === 0
-            ? '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>'
+            ? EMPTY_RESULT
             : this.buildTableHtml(results);
 
         this.pageHolder.innerHTML = '';
@@ -658,10 +702,9 @@ class Table {
     renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo) {
         let html;
         if (results.length === 0) {
-            html = '<p class="fs-3"> К сожалению, мы ничего не нашли! </p>';
-            if (selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo) {
-                html += '<p class="text-muted">Попробуйте изменить критерии поиска или убрать некоторые фильтры.</p>';
-            }
+            html = selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo
+                ? EMPTY_RESULT_FILTERED
+                : EMPTY_RESULT;
         } else {
             html = this.buildTableHtml(results);
         }
@@ -696,8 +739,7 @@ class SettingsModal {
                 lastUpdateEl.textContent = `Последнее обновление: ${formattedDate}`;
             }
         }
-        const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
-        modal.show();
+        Dialogs.open('settingsModal');
     }
 
     apply() {
@@ -706,40 +748,34 @@ class SettingsModal {
         this.showNotification('Настройки успешно применены!', 'success');
     }
 
+    // Сброс необратим, поэтому сначала спрашиваем подтверждение.
     reset() {
+        Dialogs.open('resetConfirmModal');
+    }
+
+    confirmReset() {
         this.instantList.resetSettings();
-
-        const settingsModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-        if (settingsModal) {
-            settingsModal.hide();
-        }
-
+        Dialogs.close('resetConfirmModal');
+        this.close();
         this.showNotification('Настройки успешно сброшены!', 'success');
     }
 
     close() {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-        if (modal) {
-            modal.hide();
-        }
+        Dialogs.close('settingsModal');
     }
 
     showNotification(message, type = 'info') {
+        const holder = document.getElementById('toast-holder');
+        if (!holder) return;
+
         const notification = document.createElement('div');
-        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+        notification.className = `callout ${type}`;
+        notification.innerHTML = `<p></p>`;
+        notification.firstChild.textContent = message;
 
-        document.body.appendChild(notification);
+        holder.appendChild(notification);
 
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 3000);
+        setTimeout(() => notification.remove(), 3000);
     }
 }
 
@@ -752,8 +788,7 @@ class AdvancedSearchModal {
     open() {
         this.populateTagsSelect();
         this.restoreFromHash();
-        const modal = new bootstrap.Modal(document.getElementById('advancedSearchModal'));
-        modal.show();
+        Dialogs.open('advancedSearchModal');
     }
 
     restoreFromHash() {
@@ -822,15 +857,26 @@ class AdvancedSearchModal {
                 searchKeys: ['value', 'id', 'label']
             },
             templates: {
+                // Без переносов строк: у пунктов выпадашки white-space:pre-wrap,
+                // и отступы шаблона превращаются в пустые строки внутри пункта.
                 dropdownItem: function(item) {
-                    return `<div ${this.getAttributes(item)}
-                                class='${this.settings.classNames.dropdownItem} ${item.class ? item.class : ""}'
-                                tabindex="0"
-                                role="option">
-                                ${item.label || item.value}
-                            </div>`;
+                    const cls = `${this.settings.classNames.dropdownItem} ${item.class ? item.class : ""}`;
+                    return `<div ${this.getAttributes(item)} class='${cls}' tabindex="0" role="option">${item.label || item.value}</div>`;
                 }
             }
+        });
+
+        // По умолчанию Tagify вешает выпадашку на document.body и считает её
+        // координаты как документные. Внутри модального <dialog> это не
+        // работает дважды: содержимое вне диалога инертно и лежит под
+        // затемнением, а точка отсчёта у диалога своя. Поэтому переносим
+        // выпадашку в саму обёртку поля, а позицию задаём в CSS.
+        this.tagsTagify.settings.dropdown.appendTarget = this.tagsTagify.DOM.scope;
+
+        // Выпадашка раскрывается вниз и может уйти за нижний край
+        // прокручиваемого тела диалога — подтягиваем поле в видимую область.
+        this.tagsTagify.on('dropdown:show', () => {
+            this.tagsTagify.DOM.scope.scrollIntoView({ block: 'nearest' });
         });
     }
 
@@ -881,8 +927,7 @@ class AdvancedSearchModal {
 
         this.instantList.performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo);
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('advancedSearchModal'));
-        modal.hide();
+        Dialogs.close('advancedSearchModal');
     }
 }
 
@@ -900,6 +945,10 @@ function applyColumnSettings() {
 
 function resetSettings() {
     settingsModal.reset();
+}
+
+function confirmResetSettings() {
+    settingsModal.confirmReset();
 }
 
 function showNotification(message, type = 'info') {
@@ -927,4 +976,5 @@ window.onload = () => {
 
     settingsModal = new SettingsModal(instantListInstance);
     advancedSearchModal = new AdvancedSearchModal(instantListInstance);
+    Dialogs.setup();
 };

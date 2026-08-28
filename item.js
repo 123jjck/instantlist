@@ -30,7 +30,7 @@ const currencyMap = { 0: 'не продаётся', 1: 'Смешинки', 2: '�
 // приглушённой подписью к тому полю, к которому относятся.
 function withId(html, value) {
     if (value === undefined || value === null) return html;
-    return `${html} <span class="text-muted small">(${escapeHtml(value)})</span>`;
+    return `${html} <span class="muted small">(${escapeHtml(value)})</span>`;
 }
 
 function escapeHtml(value) {
@@ -51,11 +51,12 @@ function formatDate(iso) {
 
 function renderTags(tagsString) {
     if (!tagsString) return '—';
-    return tagsString.split(',').map((tag) => {
+    const tags = tagsString.split(',').map((tag) => {
         const id = tag.trim();
         if (!id) return '';
-        return `<span class="badge bg-secondary me-1">${escapeHtml(tagsMap[id] || id)}</span>`;
+        return `<span class="tag">${escapeHtml(tagsMap[id] || id)}</span>`;
     }).join('');
+    return `<span class="tags">${tags}</span>`;
 }
 
 // Значения полей вещи в человекочитаемом виде — используется и в карточке,
@@ -64,7 +65,7 @@ function formatFieldValue(field, value) {
     if (value === undefined || value === null || value === '') return '—';
     switch (field) {
         case 'GoodTypeId': return goodTypeMap[value]
-            ? `${escapeHtml(goodTypeMap[value])} <span class="text-muted">(${escapeHtml(value)})</span>`
+            ? `${escapeHtml(goodTypeMap[value])} <span class="muted">(${escapeHtml(value)})</span>`
             : escapeHtml(value);
         case 'Tags': return renderTags(value);
         case 'IsActive': return value ? 'Да' : 'Нет';
@@ -89,7 +90,7 @@ function textHtml(value) {
 function withText(id, text) {
     if (id === undefined || id === null) return '—';
     // Часть DescTRId/TRId в игровой базе ссылается на несуществующие строки.
-    const label = text ? textHtml(text) : '<span class="text-muted">нет в базе текстов</span>';
+    const label = text ? textHtml(text) : '<span class="muted">нет в базе текстов</span>';
     return withId(label, id);
 }
 
@@ -137,9 +138,9 @@ class ItemPage {
 
     fail(message) {
         document.getElementById('itemContent').innerHTML =
-            `<div class="alert alert-warning">${escapeHtml(message)}</div>`;
-        document.getElementById('relatedBlock').classList.add('d-none');
-        document.getElementById('historyBlock').classList.add('d-none');
+            `<div class="callout warning"><p>${escapeHtml(message)}</p></div>`;
+        document.getElementById('relatedBlock').classList.add('hidden');
+        document.getElementById('historyBlock').classList.add('hidden');
     }
 
     name() {
@@ -162,7 +163,7 @@ class ItemPage {
     resourceLink(mrid) {
         const url = this.resourceUrl(mrid);
         return url
-            ? `<a href="${url}" target="_blank" class="text-decoration-none">${escapeHtml(mr[mrid].Url)}</a>`
+            ? `<a href="${url}" target="_blank" class="link"><code>${escapeHtml(mr[mrid].Url)}</code></a>`
             : '—';
     }
 
@@ -208,15 +209,15 @@ class ItemPage {
         }
 
         document.getElementById('itemContent').innerHTML = `
-            <div class="row g-4">
-                <div class="col-12 col-md-4 col-lg-3 text-center">
-                    ${picUrl ? `<img src="${picUrl}" class="img-fluid item-preview" alt="${escapeHtml(name)}">`
-                             : '<div class="text-muted">Нет превью</div>'}
+            <div class="item-layout">
+                <div class="item-figure">
+                    ${picUrl ? `<img src="${picUrl}" alt="${escapeHtml(name)}">`
+                             : '<span class="muted small">Нет превью</span>'}
                 </div>
-                <div class="col-12 col-md-8 col-lg-9">
-                    <table class="table table-striped table-borderless mb-0 item-details">
+                <div class="item-facts table-wrap">
+                    <table class="table table-kv">
                         <tbody>
-                            ${rows.map(([k, v]) => `<tr><th class="w-25">${k}</th><td>${v}</td></tr>`).join('')}
+                            ${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td class="break">${v}</td></tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -246,21 +247,21 @@ class ItemPage {
             const pic = this.resourceUrl(-other.MRId);
             return `<tr>
                 <td>${pic ? `<img src="${pic}" class="related-preview" alt="">` : ''}</td>
-                <td class="text-nowrap">${escapeHtml(other.Id)}</td>
-                <td><a href="./item.html?id=${other.Id}" class="text-decoration-none">${escapeHtml(t ? t.H : 'Без названия')}</a></td>
+                <td class="nowrap mono muted">${escapeHtml(other.Id)}</td>
+                <td><a href="./item.html?id=${other.Id}" class="link">${escapeHtml(t ? t.H : 'Без названия')}</a></td>
                 <td>${formatFieldValue('GoodTypeId', other.GoodTypeId)}</td>
-                <td class="text-nowrap">${escapeHtml(formatDate(other.PublishDate))}</td>
+                <td class="nowrap muted">${escapeHtml(formatDate(other.PublishDate))}</td>
             </tr>`;
         }).join('');
 
         document.getElementById('relatedHolder').innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-striped table-borderless align-middle">
+            <div class="table-wrap">
+                <table class="table">
                     <thead><tr><th></th><th>ID</th><th>Название</th><th>Тип</th><th>Дата добавления</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>`;
-        document.getElementById('relatedBlock').classList.remove('d-none');
+        document.getElementById('relatedBlock').classList.remove('hidden');
     }
 
     async renderHistory() {
@@ -273,7 +274,7 @@ class ItemPage {
             await this.loadScript(`${HISTORY_DIR}/h${b}.js`);
             bucket = (window.INSTANTLIST_HISTORY || {})[b] || {};
         } catch (e) {
-            holder.innerHTML = '<div class="alert alert-secondary mb-0">История правок недоступна: не удалось загрузить файлы истории.</div>';
+            holder.innerHTML = '<div class="callout"><p>История правок недоступна: не удалось загрузить файлы истории.</p></div>';
             return;
         }
 
@@ -282,7 +283,7 @@ class ItemPage {
         this.events = (bucket[this.id] || []).slice().reverse();
 
         if (this.events.length === 0) {
-            holder.innerHTML = '<div class="alert alert-secondary mb-0">Правок в архиве не найдено.</div>';
+            holder.innerHTML = '<div class="callout"><p>Правок в архиве не найдено.</p></div>';
             return;
         }
 
@@ -296,7 +297,7 @@ class ItemPage {
         const rows = this.events.filter((e) => filter === 'all' || eventGroups[e[1]] === filter);
 
         if (rows.length === 0) {
-            holder.innerHTML = '<div class="alert alert-secondary mb-0">Для выбранного фильтра правок нет.</div>';
+            holder.innerHTML = '<div class="callout"><p>Для выбранного фильтра правок нет.</p></div>';
             return;
         }
 
@@ -332,21 +333,21 @@ class ItemPage {
                 beforeCell = before ? withId(textHtml(before), key) : '—';
                 afterCell = after ? withId(textHtml(after), key) : '—';
             } else if (type === 'swf' || type === 'pic' || type === 'icon') {
-                beforeCell = before ? `<code>${escapeHtml(before)}</code>` : '<span class="text-muted">не было</span>';
+                beforeCell = before ? `<code>${escapeHtml(before)}</code>` : '<span class="muted">не было</span>';
                 afterCell = after ? `<code>${escapeHtml(after)}</code>` : '—';
             }
 
             return `<tr>
-                <td class="text-nowrap">${escapeHtml(formatDate(this.dates[dateIdx]))}</td>
-                <td>${escapeHtml(what)}${hint ? `<div class="small text-muted text-break">${hint}</div>` : ''}</td>
-                <td class="text-break">${beforeCell}</td>
-                <td class="text-break">${afterCell}</td>
+                <td class="nowrap muted">${escapeHtml(formatDate(this.dates[dateIdx]))}</td>
+                <td>${escapeHtml(what)}${hint ? `<div class="small muted break mono">${hint}</div>` : ''}</td>
+                <td class="break">${beforeCell}</td>
+                <td class="break">${afterCell}</td>
             </tr>`;
         }).join('');
 
         holder.innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-striped table-borderless align-middle">
+            <div class="table-wrap">
+                <table class="table">
                     <thead><tr><th>Дата</th><th>Изменение</th><th>До</th><th>После</th></tr></thead>
                     <tbody>${body}</tbody>
                 </table>
