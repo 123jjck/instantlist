@@ -349,7 +349,7 @@ class SearchEngine {
         return results;
     }
 
-    advancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, items) {
+    advancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, items, mrid = '') {
         const results = [];
 
         for (let item of items) {
@@ -364,6 +364,10 @@ class SearchEngine {
                 } else {
                     matches = normalizedName.indexOf(normalizedQuery) !== -1 || item.Id == query;
                 }
+            }
+
+            if (matches && mrid !== '') {
+                matches = Number.isInteger(Number(mrid)) && Number(item.MRId) === Number(mrid);
             }
 
             if (matches && selectedCategories.length > 0) {
@@ -509,18 +513,19 @@ class InstantList {
         const selectedTags = params.get('tags') ? params.get('tags').split(',') : [];
         const dateFrom = params.get('from') || '';
         const dateTo = params.get('to') || '';
+        const mrid = params.get('mrid') || '';
 
         this.search.value = query;
 
         const isAdvancedSearch = exactMatch || selectedCategories.length > 0 ||
-                                  selectedTags.length > 0 || dateFrom || dateTo;
+                                  selectedTags.length > 0 || dateFrom || dateTo || mrid;
 
         if (isAdvancedSearch) {
             const results = this.searchEngine.advancedSearch(
-                query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, this.items
+                query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, this.items, mrid
             );
             this.table.renderAdvancedSearchResults(
-                results, query, selectedCategories, selectedTags, dateFrom, dateTo
+                results, query, selectedCategories, selectedTags, dateFrom, dateTo, mrid
             );
         } else {
             const results = this.searchEngine.search(query, this.items);
@@ -543,6 +548,7 @@ class InstantList {
                 // Id может прийти в поиск обёрнутым в <mark>, поэтому для ссылок
                 // держим неизменный идентификатор отдельно.
                 RawId: item['Id'],
+                MRId: item['MRId'],
                 Name: tr[item['TRId']] !== undefined ? tr[item['TRId']]['H'] : 'Без названия',
                 Type: this.getItemType(item['GoodTypeId']),
                 PicUrl: mr[-item['MRId']] !== undefined ? mr[-item['MRId']]['Url'] : '',
@@ -588,9 +594,10 @@ class InstantList {
         this.handleHashChange();
     }
 
-    performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo) {
+    performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, mrid = '') {
         const params = new URLSearchParams();
 
+        if (mrid !== '') params.set('mrid', mrid);
         if (query) params.set('q', query);
         if (exactMatch) params.set('exact', 'true');
         if (selectedCategories.length > 0) params.set('cats', selectedCategories.join(','));
@@ -699,10 +706,10 @@ class Table {
         this.applyColumnVisibility();
     }
 
-    renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo) {
+    renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo, mrid = '') {
         let html;
         if (results.length === 0) {
-            html = selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo
+            html = selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo || mrid
                 ? EMPTY_RESULT_FILTERED
                 : EMPTY_RESULT;
         } else {
@@ -712,6 +719,7 @@ class Table {
         this.pageHolder.innerHTML = '';
 
         const titleParts = [];
+        if (mrid !== '') titleParts.push(`MRId: ${mrid}`);
         if (query) titleParts.push(`"${query}"`);
         if (selectedCategories.length > 0) titleParts.push(`категории: ${selectedCategories.join(', ')}`);
         if (selectedTags.length > 0) titleParts.push(`теги: ${selectedTags.join(', ')}`);
@@ -793,6 +801,7 @@ class AdvancedSearchModal {
 
     restoreFromHash() {
         const hash = window.location.hash;
+        document.getElementById('advancedSearchMRId').value = '';
 
         if (!hash.startsWith('#?')) {
             return;
@@ -808,6 +817,7 @@ class AdvancedSearchModal {
 
         const exactMatch = params.get('exact') === 'true';
         document.getElementById('exactMatchSearch').checked = exactMatch;
+        document.getElementById('advancedSearchMRId').value = params.get('mrid') || '';
 
         const categories = params.get('cats') ? params.get('cats').split(',') : [];
         categories.forEach(cat => {
@@ -882,6 +892,7 @@ class AdvancedSearchModal {
 
     clear() {
         document.getElementById('advancedSearchQuery').value = '';
+        document.getElementById('advancedSearchMRId').value = '';
         document.getElementById('exactMatchSearch').checked = false;
 
         const categoryCheckboxes = document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]');
@@ -925,7 +936,10 @@ class AdvancedSearchModal {
         const dateFrom = document.getElementById('dateFrom').value;
         const dateTo = document.getElementById('dateTo').value;
 
-        this.instantList.performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo);
+        const mridInput = document.getElementById('advancedSearchMRId');
+        if (!mridInput.reportValidity()) return;
+        const mrid = mridInput.value.trim();
+        this.instantList.performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, mrid);
 
         Dialogs.close('advancedSearchModal');
     }

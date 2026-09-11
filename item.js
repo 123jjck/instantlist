@@ -203,6 +203,8 @@ class ItemPage {
         // которое хранится по отрицательному MRId.
         rows.push(['Слой (LayerId)', plain(item.LayerId)],
                   ['SWF-файл', withId(this.resourceLink(item.MRId), item.MRId)],
+                  ['SWF-файл (до хэширования)', mr[item.MRId]?.RUrl
+                      ? `<code>${escapeHtml(mr[item.MRId].RUrl)}</code>` : '—'],
                   ['Превью', this.resourceLink(-item.MRId)]);
         if (item.IconMRId !== undefined) {
             rows.push(['Иконка', withId(this.resourceLink(item.IconMRId), item.IconMRId)]);

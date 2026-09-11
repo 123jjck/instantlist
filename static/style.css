@@ -747,7 +747,8 @@ code {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 180px;
+    aspect-ratio: 1;
+    min-width: 0;
     padding: 16px;
     box-sizing: border-box;
     background-color: var(--sui-color-surface);
@@ -756,8 +757,10 @@ code {
 }
 
 .item-figure img {
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
 }
 
 .item-facts {
@@ -784,6 +787,10 @@ code {
 /* ------------------------------------------------------------------ */
 /* 9. Подсветка поиска и Tagify                                        */
 /* ------------------------------------------------------------------ */
+
+.col-name .link {
+    display: inline;
+}
 
 mark {
     padding: 0 1px;
