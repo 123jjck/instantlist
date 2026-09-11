@@ -653,6 +653,23 @@ code {
     align-items: flex-start;
 }
 
+/* Категории читаются сверху вниз, затем переходят в следующую колонку. */
+.category-grid {
+    display: block;
+    columns: 3 170px;
+    column-gap: 20px;
+}
+
+.category-grid .label {
+    display: flex;
+    break-inside: avoid;
+    margin-bottom: 8px;
+}
+
+.label.is-disabled {
+    opacity: 0.55;
+}
+
 .checkbox:disabled + .label,
 .label:has(.checkbox:disabled) {
     opacity: 0.55;
@@ -747,20 +764,31 @@ code {
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 1;
+    position: relative;
     min-width: 0;
-    padding: 16px;
     box-sizing: border-box;
     background-color: var(--sui-color-surface);
     border: 1px solid var(--sui-color-outline-secondary);
     border-radius: 10px;
 }
 
+/* Процентный отступ сохраняет квадрат и в Chrome 87. */
+.item-figure::before {
+    content: '';
+    padding-top: 100%;
+}
+
 .item-figure img {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: calc(100% - 32px);
+    height: calc(100% - 32px);
     object-fit: contain;
+}
+
+.item-figure > span {
+    position: absolute;
 }
 
 .item-facts {

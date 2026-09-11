@@ -85,7 +85,7 @@ class SettingsManager {
 
         if (columnSettings) {
             try {
-                this.columnSettings = JSON.parse(columnSettings);
+                this.columnSettings = { ...this.getDefaultColumnSettings(), ...JSON.parse(columnSettings) };
             } catch (e) {
                 console.warn('Ошибка при загрузке настроек столбцов:', e);
             }
@@ -93,7 +93,7 @@ class SettingsManager {
 
         if (generalSettings) {
             try {
-                this.generalSettings = JSON.parse(generalSettings);
+                this.generalSettings = { ...this.getDefaultGeneralSettings(), ...JSON.parse(generalSettings) };
             } catch (e) {
                 console.warn('Ошибка при загрузке общих настроек:', e);
             }
@@ -126,15 +126,10 @@ class SettingsManager {
     }
 
     updateFromDOM() {
-        this.columnSettings = {
-            colType: document.getElementById('colType').checked,
-            colPreview: document.getElementById('colPreview').checked,
-            colSwf: document.getElementById('colSwf').checked,
-            colPublishDate: document.getElementById('colPublishDate').checked,
-            colTags: document.getElementById('colTags').checked,
-            colUsualTickets: document.getElementById('colUsualTickets').checked,
-            colMagicTickets: document.getElementById('colMagicTickets').checked
-        };
+        this.columnSettings = {};
+        for (const { key } of COLUMNS) {
+            if (key) this.columnSettings[key] = document.getElementById(key).checked;
+        }
 
         const themeSelect = document.getElementById('themeSelect');
         this.generalSettings = {
@@ -145,23 +140,15 @@ class SettingsManager {
     }
 
     applyToDOM() {
-        const colTypeEl = document.getElementById('colType');
-        const colPreviewEl = document.getElementById('colPreview');
-        const colSwfEl = document.getElementById('colSwf');
-        const colPublishDateEl = document.getElementById('colPublishDate');
-        const colTagsEl = document.getElementById('colTags');
-        const colUsualTicketsEl = document.getElementById('colUsualTickets');
-        const colMagicTicketsEl = document.getElementById('colMagicTickets');
+        const defaults = this.getDefaultColumnSettings();
+        for (const { key } of COLUMNS) {
+            if (!key) continue;
+            const checkbox = document.getElementById(key);
+            if (checkbox) checkbox.checked = this.columnSettings[key] ?? defaults[key];
+        }
+
         const itemsPerPageEl = document.getElementById('itemsPerPageSelect');
         const showOnlyStoreItemsEl = document.getElementById('showOnlyStoreItems');
-
-        if (colTypeEl) colTypeEl.checked = this.columnSettings.colType !== false;
-        if (colPreviewEl) colPreviewEl.checked = this.columnSettings.colPreview !== false;
-        if (colSwfEl) colSwfEl.checked = this.columnSettings.colSwf !== false;
-        if (colPublishDateEl) colPublishDateEl.checked = this.columnSettings.colPublishDate !== false;
-        if (colTagsEl) colTagsEl.checked = this.columnSettings.colTags !== false;
-        if (colUsualTicketsEl) colUsualTicketsEl.checked = this.columnSettings.colUsualTickets !== false;
-        if (colMagicTicketsEl) colMagicTicketsEl.checked = this.columnSettings.colMagicTickets !== false;
 
         if (itemsPerPageEl && this.generalSettings.itemsPerPage) {
             itemsPerPageEl.value = this.generalSettings.itemsPerPage;
@@ -240,8 +227,8 @@ const EMPTY_RESULT_FILTERED = `
 // Единый источник правды по колонкам таблицы: заголовок, ячейка и видимость.
 // Колонки с key: null показываются всегда; остальные управляются columnSettings.
 const COLUMNS = [
-    { key: null, cls: 'col-id', title: 'ID', cell: (item) => item['Id'] },
-    { key: null, cls: 'col-name', title: 'Название', cell: (item) => `<a href="./item.html?id=${item['RawId']}" class="link">${item['Name']}</a>` },
+    { key: null, cls: 'col-id', title: 'ID', cell: (item, r) => r.renderId(item) },
+    { key: null, cls: 'col-name', title: 'Название', cell: (item, r) => r.renderName(item) },
     { key: 'colType', cls: 'col-type', title: 'Тип', cell: (item) => item['Type'] },
     { key: 'colPreview', cls: 'col-preview', title: 'Превью', cell: (item, r) => `<img src="${r.domain}/${r.fsPath}/${item['PicUrl']}" alt="" loading="lazy"/>` },
     { key: 'colSwf', cls: 'col-swf', title: 'SWF файл', cell: (item, r) => `<a href="${r.domain}/${r.fsPath}/${item['SwfUrl']}" class="link passive" target="_blank">${item['SwfUrl']}</a>` },
@@ -256,46 +243,20 @@ class ItemRenderer {
         this.domain = domain;
         this.fsPath = fsPath;
         this.columnSettings = columnSettings;
+        this.filters = readSearchFilters('');
     }
 
-    parseTags(tagsString) {
-        return tagsString.split(',').map(tag => tag.trim());
-    }
-
-    renderTags(item) {
-        if (!item['Tags']) {
-            return '—';
-        }
-        const tags = this.parseTags(item['Tags']).map(tagId => {
-            const tagName = tagsMap[tagId.trim()] || tagId.trim();
-            return `<span class="tag">${tagName}</span>`;
-        }).join('');
-        return `<span class="tags">${tags}</span>`;
-    }
-
-    render(item) {
-        let html = '<tr>';
-        for (const col of COLUMNS) {
-            if (col.key && !this.columnSettings[col.key]) continue;
-            const clsAttr = col.cls ? ` class="${col.cls}"` : '';
-            html += `<td${clsAttr}>${col.cell(item, this)}</td>`;
-        }
-        html += '</tr>';
-        return html;
-    }
-}
-
-class SearchEngine {
     highlightText(text, query) {
+        text = String(text);
         const normalizedText = StringNormalizer.normalizeKeepQuotes(text);
         const normalizedQuery = StringNormalizer.normalize(query);
         const words = normalizedQuery.split(' ').filter(word => word.length > 0);
 
-        // Подсветка работает по позициям, поэтому нужна посимвольная
+        // Подсветка работает по позициям, поэтому нужно посимвольное
         // соответствие нормализованного и исходного текста. Если trim сдвинул
         // длину — возвращаем текст как есть, без разметки.
         if (words.length === 0 || normalizedText.length !== text.length) {
-            return text;
+            return escapeHtml(text);
         }
 
         // Отмечаем все вхождения каждого слова; пересечения сливаются в один <mark>.
@@ -315,7 +276,7 @@ class SearchEngine {
             if (marked[i] && (i === 0 || !marked[i - 1])) {
                 result += '<mark>';
             }
-            result += text[i];
+            result += escapeHtml(text[i]);
             if (marked[i] && (i === text.length - 1 || !marked[i + 1])) {
                 result += '</mark>';
             }
@@ -324,113 +285,117 @@ class SearchEngine {
         return result;
     }
 
-    search(query, items) {
-        const results = [];
-        query = query.trim();
-
-        if (query.length < 2 && isNaN(query)) {
-            return results;
-        }
-
-        const normalizedQuery = StringNormalizer.normalize(query);
-
-        for (let item of items) {
-            const normalizedName = StringNormalizer.normalize(item.Name);
-            if (normalizedName.indexOf(normalizedQuery) !== -1 || item.Id == query) {
-                const itemCopy = Object.assign({}, item);
-                itemCopy.Name = this.highlightText(item.Name, query);
-                if (item.Id == query) {
-                    itemCopy.Id = '<mark>' + itemCopy.Id + '</mark>';
-                }
-                results.push(itemCopy);
-            }
-        }
-
-        return results;
+    parseTags(tagsString) {
+        return tagsString.split(',').map(tag => tag.trim());
     }
 
-    advancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, items, mrid = '') {
-        const results = [];
-
-        for (let item of items) {
-            let matches = true;
-
-            if (query) {
-                const normalizedQuery = StringNormalizer.normalize(query);
-                const normalizedName = StringNormalizer.normalize(item.Name);
-
-                if (exactMatch) {
-                    matches = normalizedName === normalizedQuery;
-                } else {
-                    matches = normalizedName.indexOf(normalizedQuery) !== -1 || item.Id == query;
-                }
-            }
-
-            if (matches && mrid !== '') {
-                matches = Number.isInteger(Number(mrid)) && Number(item.MRId) === Number(mrid);
-            }
-
-            if (matches && selectedCategories.length > 0) {
-                matches = selectedCategories.includes(item.Type);
-            }
-
-            if (matches && selectedTags.length > 0) {
-                if (!item.Tags) {
-                    matches = false;
-                } else {
-                    const itemTags = item.Tags.split(',').map(tag => {
-                        const tagId = tag.trim();
-                        return tagsMap[tagId] || tagId;
-                    });
-
-                    matches = selectedTags.some(selectedTag => {
-                        return itemTags.some(itemTag =>
-                            StringNormalizer.normalize(itemTag).indexOf(StringNormalizer.normalize(selectedTag)) !== -1
-                        );
-                    });
-                }
-            }
-
-            if (matches && (dateFrom || dateTo)) {
-                const itemDateParts = item.PublishDate.split('.');
-                if (itemDateParts.length === 3) {
-                    const itemDate = new Date(itemDateParts[2], itemDateParts[1] - 1, itemDateParts[0]);
-
-                    if (dateFrom) {
-                        const fromDate = new Date(dateFrom);
-                        if (itemDate < fromDate) {
-                            matches = false;
-                        }
-                    }
-
-                    if (dateTo && matches) {
-                        const toDate = new Date(dateTo);
-                        toDate.setHours(23, 59, 59, 999);
-                        if (itemDate > toDate) {
-                            matches = false;
-                        }
-                    }
-                } else {
-                    matches = false;
-                }
-            }
-
-            if (matches) {
-                const itemCopy = Object.assign({}, item);
-
-                if (query && !exactMatch) {
-                    itemCopy.Name = this.highlightText(item.Name, query);
-                }
-
-                if (query && item.Id == query) {
-                    itemCopy.Id = '<mark>' + itemCopy.Id + '</mark>';
-                }
-
-                results.push(itemCopy);
-            }
+    renderTags(item) {
+        if (!item['Tags']) {
+            return '—';
         }
+        const tags = this.parseTags(item['Tags']).map(tagId => {
+            const tagName = tagsMap[tagId.trim()] || tagId.trim();
+            return `<span class="tag">${tagName}</span>`;
+        }).join('');
+        return `<span class="tags">${tags}</span>`;
+    }
 
-        return results;
+    renderId(item) {
+        const id = escapeHtml(item.Id);
+        return this.filters.query && item.Id == this.filters.query ? `<mark>${id}</mark>` : id;
+    }
+
+    renderName(item) {
+        const { query, exactMatch } = this.filters;
+        const name = query && !exactMatch ? this.highlightText(item.Name, query) : escapeHtml(item.Name);
+        return `<a href="./item.html?id=${item.Id}" class="link">${name}</a>`;
+    }
+
+    render(item) {
+        let html = '<tr>';
+        for (const col of COLUMNS) {
+            if (col.key && !this.columnSettings[col.key]) continue;
+            const clsAttr = col.cls ? ` class="${col.cls}"` : '';
+            html += `<td${clsAttr}>${col.cell(item, this)}</td>`;
+        }
+        html += '</tr>';
+        return html;
+    }
+}
+
+// Категория поиска объединяет подтипы, сохраняя точный тип в таблице.
+const FURNITURE_GOOD_TYPE_IDS = new Set([20, 22, 23, 59, 60, 61, 62, 63, 68, 107]);
+
+function readSearchFilters(hash = window.location.hash) {
+    const params = new URLSearchParams(hash.startsWith('#?') ? hash.slice(2) : '');
+    return {
+        query: (params.get('q') || '').trim(),
+        exactMatch: params.get('exact') === 'true',
+        selectedCategories: (params.get('cats') || '').split(',').filter(Boolean),
+        selectedTags: (params.get('tags') || '').split(',').filter(Boolean),
+        dateFrom: params.get('from') || '',
+        dateTo: params.get('to') || '',
+        mrid: params.get('mrid') || ''
+    };
+}
+
+function isAdvancedSearch(filters) {
+    return Boolean(filters.exactMatch || filters.selectedCategories.length ||
+        filters.selectedTags.length || filters.dateFrom || filters.dateTo || filters.mrid);
+}
+
+function escapeHtml(value) {
+    const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(value).replace(/[&<>"']/g, character => entities[character]);
+}
+
+class SearchEngine {
+    search(filters, items) {
+        const { query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, mrid } = filters;
+        if (!isAdvancedSearch(filters) && query.length < 2 && isNaN(query)) return [];
+
+        const normalizedQuery = StringNormalizer.normalize(query);
+        const normalizedTags = selectedTags.map(tag => StringNormalizer.normalize(tag));
+        const resourceId = Number(mrid);
+
+        return items.filter(item => {
+            if (query) {
+                const name = StringNormalizer.normalize(item.Name);
+                const matches = exactMatch
+                    ? name === normalizedQuery
+                    : name.includes(normalizedQuery) || item.Id == query;
+                if (!matches) return false;
+            }
+
+            if (mrid !== '' && (!Number.isInteger(resourceId) || Number(item.MRId) !== resourceId)) {
+                return false;
+            }
+
+            if (selectedCategories.length > 0) {
+                const matches = selectedCategories.some(category => category === 'Мебель'
+                    ? FURNITURE_GOOD_TYPE_IDS.has(Number(item.GoodTypeId))
+                    : category === item.Type);
+                if (!matches) return false;
+            }
+
+            if (normalizedTags.length > 0) {
+                const itemTags = (item.Tags || '').split(',').map(tag => {
+                    const id = tag.trim();
+                    return StringNormalizer.normalize(tagsMap[id] || id);
+                });
+                if (!normalizedTags.some(tag => itemTags.some(itemTag => itemTag.includes(tag)))) {
+                    return false;
+                }
+            }
+
+            // ISO-даты сравниваем как календарные дни, без часовых поясов.
+            if (dateFrom || dateTo) {
+                if (!item.PublishDay) return false;
+                if (dateFrom && item.PublishDay < dateFrom) return false;
+                if (dateTo && item.PublishDay > dateTo) return false;
+            }
+            return true;
+        });
     }
 }
 
@@ -451,8 +416,8 @@ class InstantList {
             this.settingsManager
         );
 
-        this.items = this.buildItemsArray(resources[0], resources[1], resources[2], resources[3]);
-        this.allItems = [...this.items];
+        this.items = this.buildItemsArray(resources.g, resources.mr, resources.tr);
+        this.allItems = this.items;
 
         this.settingsManager.applyToDOM();
 
@@ -504,40 +469,17 @@ class InstantList {
     }
 
     handleSearchWithParams() {
-        const paramsString = window.location.hash.replace('#?', '');
-        const params = new URLSearchParams(paramsString);
-
-        const query = params.get('q') || '';
-        const exactMatch = params.get('exact') === 'true';
-        const selectedCategories = params.get('cats') ? params.get('cats').split(',') : [];
-        const selectedTags = params.get('tags') ? params.get('tags').split(',') : [];
-        const dateFrom = params.get('from') || '';
-        const dateTo = params.get('to') || '';
-        const mrid = params.get('mrid') || '';
-
-        this.search.value = query;
-
-        const isAdvancedSearch = exactMatch || selectedCategories.length > 0 ||
-                                  selectedTags.length > 0 || dateFrom || dateTo || mrid;
-
-        if (isAdvancedSearch) {
-            const results = this.searchEngine.advancedSearch(
-                query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, this.items, mrid
-            );
-            this.table.renderAdvancedSearchResults(
-                results, query, selectedCategories, selectedTags, dateFrom, dateTo, mrid
-            );
-        } else {
-            const results = this.searchEngine.search(query, this.items);
-            this.table.renderSearchResults(results);
-        }
+        const filters = readSearchFilters();
+        this.search.value = filters.query;
+        const results = this.searchEngine.search(filters, this.items);
+        this.table.renderSearchResults(results, filters);
     }
 
     getItemType(goodTypeId) {
         return goodTypeMap[goodTypeId] || goodTypeId;
     }
 
-    buildItemsArray(t, g, mr, tr) {
+    buildItemsArray(g, mr, tr) {
         const items = [];
         for (const item of Object.values(g)) {
             if (this.config['layerIds'] !== '*' && !this.config['layerIds'].includes(item['LayerId'])) {
@@ -545,15 +487,14 @@ class InstantList {
             }
             items.push({
                 Id: item['Id'],
-                // Id может прийти в поиск обёрнутым в <mark>, поэтому для ссылок
-                // держим неизменный идентификатор отдельно.
-                RawId: item['Id'],
                 MRId: item['MRId'],
+                GoodTypeId: item['GoodTypeId'],
                 Name: tr[item['TRId']] !== undefined ? tr[item['TRId']]['H'] : 'Без названия',
                 Type: this.getItemType(item['GoodTypeId']),
                 PicUrl: mr[-item['MRId']] !== undefined ? mr[-item['MRId']]['Url'] : '',
                 SwfUrl: mr[item['MRId']] !== undefined ? mr[item['MRId']]['Url'] : undefined,
-                PublishDate: item['PublishDate'] ? new Date(item['PublishDate']).toLocaleDateString('ru-RU') : 'Не указана',
+                PublishDay: item.PublishDate ? item.PublishDate.slice(0, 10) : '',
+                PublishDate: item.PublishDate ? item.PublishDate.slice(0, 10).split('-').reverse().join('.') : 'Не указана',
                 Tags: item['Tags'],
                 UsualTickets: item['UsualTickets'] !== undefined ? item['UsualTickets'] : 0,
                 MagicTickets: item['MagicTickets'] !== undefined ? item['MagicTickets'] : 0
@@ -567,7 +508,7 @@ class InstantList {
         if (showOnlyStoreItemsEl && showOnlyStoreItemsEl.checked) {
             this.items = this.allItems.filter(item => item.Tags && item.Tags.trim() !== '');
         } else {
-            this.items = [...this.allItems];
+            this.items = this.allItems;
         }
     }
 
@@ -577,9 +518,7 @@ class InstantList {
         this.settingsManager.applyTheme();
 
         this.config.itemsPerPage = this.settingsManager.generalSettings.itemsPerPage;
-        this.table.updateItemsPerPage(this.config.itemsPerPage);
 
-        this.applyStoreFilter();
         this.handleHashChange();
     }
 
@@ -588,13 +527,12 @@ class InstantList {
         this.settingsManager.applyToDOM();
 
         this.config.itemsPerPage = this.settingsManager.generalSettings.itemsPerPage;
-        this.table.updateItemsPerPage(this.config.itemsPerPage);
 
-        this.items = [...this.allItems];
         this.handleHashChange();
     }
 
-    performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, mrid = '') {
+    performAdvancedSearch(filters) {
+        const { query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, mrid } = filters;
         const params = new URLSearchParams();
 
         if (mrid !== '') params.set('mrid', mrid);
@@ -624,12 +562,8 @@ class Table {
         this.itemRenderer = new ItemRenderer(config.domain, config.fsPath, settingsManager.columnSettings);
     }
 
-    updateItemsPerPage(itemsPerPage) {
-        this.config.itemsPerPage = itemsPerPage;
-    }
-
     setTitle(title) {
-        this.titleHolder.innerHTML = title;
+        this.titleHolder.textContent = title;
     }
 
     getTableHead() {
@@ -642,22 +576,6 @@ class Table {
         }
         head += '</tr></thead>';
         return head;
-    }
-
-    applyColumnVisibility() {
-        const settings = this.settingsManager.columnSettings;
-        const style = document.getElementById('columnStyles') || document.createElement('style');
-        style.id = 'columnStyles';
-
-        let css = '';
-        for (const col of COLUMNS) {
-            if (col.key && col.cls && !settings[col.key]) {
-                css += `.${col.cls} { display: none !important; } `;
-            }
-        }
-
-        style.textContent = css;
-        document.head.appendChild(style);
     }
 
     renderPagination(pagesCount, currentPage) {
@@ -676,7 +594,8 @@ class Table {
         return paginationHTML;
     }
 
-    buildTableHtml(items) {
+    buildTableHtml(items, filters = readSearchFilters('')) {
+        this.itemRenderer.filters = filters;
         this.itemRenderer.columnSettings = this.settingsManager.columnSettings;
 
         let html = '<div class="table-wrap"><table class="table">';
@@ -691,33 +610,21 @@ class Table {
 
     renderTable(items, page, from, to) {
         this.holder.innerHTML = this.buildTableHtml(items.slice(from - 1, to));
-        this.applyColumnVisibility();
         this.pageHolder.innerHTML = this.renderPagination(Math.ceil(items.length / this.config.itemsPerPage), page);
     }
 
-    renderSearchResults(results) {
-        const html = results.length === 0
-            ? EMPTY_RESULT
-            : this.buildTableHtml(results);
-
+    renderSearchResults(results, filters) {
+        const advanced = isAdvancedSearch(filters);
+        const emptyResult = advanced ? EMPTY_RESULT_FILTERED : EMPTY_RESULT;
         this.pageHolder.innerHTML = '';
-        this.setTitle("Результаты поиска");
-        this.holder.innerHTML = html;
-        this.applyColumnVisibility();
-    }
+        this.holder.innerHTML = results.length ? this.buildTableHtml(results, filters) : emptyResult;
 
-    renderAdvancedSearchResults(results, query, selectedCategories, selectedTags, dateFrom, dateTo, mrid = '') {
-        let html;
-        if (results.length === 0) {
-            html = selectedCategories.length > 0 || selectedTags.length > 0 || dateFrom || dateTo || mrid
-                ? EMPTY_RESULT_FILTERED
-                : EMPTY_RESULT;
-        } else {
-            html = this.buildTableHtml(results);
+        if (!advanced) {
+            this.setTitle('Результаты поиска');
+            return;
         }
 
-        this.pageHolder.innerHTML = '';
-
+        const { query, selectedCategories, selectedTags, dateFrom, dateTo, mrid } = filters;
         const titleParts = [];
         if (mrid !== '') titleParts.push(`MRId: ${mrid}`);
         if (query) titleParts.push(`"${query}"`);
@@ -729,8 +636,6 @@ class Table {
 
         const pluralForm = results.length === 1 ? '' : results.length < 5 ? 'а' : 'ов';
         this.setTitle(`Расширенный поиск${titleParts.length > 0 ? ' — ' + titleParts.join(' | ') : ''} (${results.length} результат${pluralForm})`);
-        this.holder.innerHTML = html;
-        this.applyColumnVisibility();
     }
 }
 
@@ -795,60 +700,47 @@ class AdvancedSearchModal {
 
     open() {
         this.populateTagsSelect();
+        this.updateCategoryAvailability();
         this.restoreFromHash();
         Dialogs.open('advancedSearchModal');
     }
 
+    updateCategoryAvailability() {
+        // Берём весь список режима, независимо от поиска и фильтра магазина.
+        const available = new Set(this.instantList.allItems.map(item =>
+            FURNITURE_GOOD_TYPE_IDS.has(Number(item.GoodTypeId)) ? 'Мебель' : item.Type
+        ));
+        const clothingOnly = this.instantList.config.layerIds !== '*';
+
+        for (const checkbox of document.querySelectorAll('#advancedSearchModal input[id^="cat_"]')) {
+            checkbox.disabled = clothingOnly && !available.has(checkbox.value);
+            checkbox.closest('label').classList.toggle('is-disabled', checkbox.disabled);
+        }
+    }
+
     restoreFromHash() {
-        const hash = window.location.hash;
-        document.getElementById('advancedSearchMRId').value = '';
+        this.applyFilters(readSearchFilters());
+    }
 
-        if (!hash.startsWith('#?')) {
-            return;
+    applyFilters(filters) {
+        document.getElementById('advancedSearchQuery').value = filters.query;
+        document.getElementById('advancedSearchMRId').value = filters.mrid;
+        document.getElementById('exactMatchSearch').checked = filters.exactMatch;
+        document.getElementById('dateFrom').value = filters.dateFrom;
+        document.getElementById('dateTo').value = filters.dateTo;
+
+        for (const checkbox of document.querySelectorAll('#advancedSearchModal input[id^="cat_"]')) {
+            checkbox.checked = !checkbox.disabled && filters.selectedCategories.includes(checkbox.value);
         }
-
-        const paramsString = hash.replace('#?', '');
-        const params = new URLSearchParams(paramsString);
-
-        const query = params.get('q') || '';
-        if (query) {
-            document.getElementById('advancedSearchQuery').value = query;
-        }
-
-        const exactMatch = params.get('exact') === 'true';
-        document.getElementById('exactMatchSearch').checked = exactMatch;
-        document.getElementById('advancedSearchMRId').value = params.get('mrid') || '';
-
-        const categories = params.get('cats') ? params.get('cats').split(',') : [];
-        categories.forEach(cat => {
-            const checkbox = Array.from(document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]'))
-                .find(cb => cb.value === cat);
-            if (checkbox) {
-                checkbox.checked = true;
-            }
-        });
-
-        const tags = params.get('tags') ? params.get('tags').split(',') : [];
-        if (tags.length > 0 && this.tagsTagify) {
-            this.tagsTagify.addTags(tags);
-        }
-
-        const dateFrom = params.get('from') || '';
-        const dateTo = params.get('to') || '';
-        if (dateFrom) {
-            document.getElementById('dateFrom').value = dateFrom;
-        }
-        if (dateTo) {
-            document.getElementById('dateTo').value = dateTo;
+        if (this.tagsTagify) {
+            this.tagsTagify.removeAllTags();
+            this.tagsTagify.addTags(filters.selectedTags);
         }
     }
 
     populateTagsSelect() {
+        if (this.tagsTagify) return;
         const tagsInput = document.getElementById('tags');
-
-        if (this.tagsTagify) {
-            this.tagsTagify.destroy();
-        }
 
         const whitelist = Object.entries(tagsMap).map(([tagId, tagValue]) => ({
             value: tagValue,
@@ -891,58 +783,27 @@ class AdvancedSearchModal {
     }
 
     clear() {
-        document.getElementById('advancedSearchQuery').value = '';
-        document.getElementById('advancedSearchMRId').value = '';
-        document.getElementById('exactMatchSearch').checked = false;
-
-        const categoryCheckboxes = document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]');
-        categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
-
-        if (this.tagsTagify) {
-            this.tagsTagify.removeAllTags();
-        }
-
-        document.getElementById('dateFrom').value = '';
-        document.getElementById('dateTo').value = '';
-    }
-
-    clearAndResetView() {
-        this.clear();
-        window.location.hash = '#1';
+        this.applyFilters(readSearchFilters(''));
     }
 
     perform() {
-        const query = document.getElementById('advancedSearchQuery').value.trim();
-        const exactMatch = document.getElementById('exactMatchSearch').checked;
-
-        const selectedCategories = [];
-        const categoryCheckboxes = document.querySelectorAll('#advancedSearchModal input[type="checkbox"][id^="cat_"]:checked');
-        categoryCheckboxes.forEach(checkbox => {
-            if (checkbox.value) {
-                selectedCategories.push(checkbox.value);
-            }
-        });
-
-        const selectedTags = [];
-        if (this.tagsTagify) {
-            const tagifyValue = this.tagsTagify.value;
-            tagifyValue.forEach(tag => {
-                if (tag.value) {
-                    selectedTags.push(tag.value);
-                }
-            });
-        }
-
-        const dateFrom = document.getElementById('dateFrom').value;
-        const dateTo = document.getElementById('dateTo').value;
-
         const mridInput = document.getElementById('advancedSearchMRId');
         if (!mridInput.reportValidity()) return;
-        const mrid = mridInput.value.trim();
-        this.instantList.performAdvancedSearch(query, exactMatch, selectedCategories, selectedTags, dateFrom, dateTo, mrid);
 
+        const categories = document.querySelectorAll('#advancedSearchModal input[id^="cat_"]:checked');
+        const filters = {
+            query: document.getElementById('advancedSearchQuery').value.trim(),
+            exactMatch: document.getElementById('exactMatchSearch').checked,
+            selectedCategories: Array.from(categories).filter(checkbox => !checkbox.disabled).map(checkbox => checkbox.value).filter(Boolean),
+            selectedTags: this.tagsTagify ? this.tagsTagify.value.map(tag => tag.value).filter(Boolean) : [],
+            dateFrom: document.getElementById('dateFrom').value,
+            dateTo: document.getElementById('dateTo').value,
+            mrid: mridInput.value.trim()
+        };
+        this.instantList.performAdvancedSearch(filters);
         Dialogs.close('advancedSearchModal');
     }
+
 }
 
 let instantListInstance;
@@ -965,10 +826,6 @@ function confirmResetSettings() {
     settingsModal.confirmReset();
 }
 
-function showNotification(message, type = 'info') {
-    settingsModal.showNotification(message, type);
-}
-
 function openAdvancedSearchModal() {
     advancedSearchModal.open();
 }
@@ -984,7 +841,7 @@ function performAdvancedSearch() {
 window.onload = () => {
     instantListInstance = new InstantList(
         document.getElementById('instantlist_search'),
-        [[], g, mr, tr],
+        { g, mr, tr },
         window.config
     );
 
